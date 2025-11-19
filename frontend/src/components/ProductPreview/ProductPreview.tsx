@@ -1,19 +1,23 @@
 import { Box, Paper, Typography, Chip, Avatar } from '@mui/material';
 import { ShopProduct } from '../../services/shop.service';
+import { useQuery } from '@tanstack/react-query';
+import { productTypesService } from '../../services/product-types.service';
 
 interface ProductPreviewProps {
   product: Partial<ShopProduct>;
 }
 
 const ProductPreview = ({ product }: ProductPreviewProps) => {
-  const productTypeLabels: Record<string, string> = {
-    avatar: 'Аватарка',
-    profile_frame: 'Рамка профілю',
-    badge: 'Бейдж',
-    theme: 'Тема',
-    customization: 'Кастомізація',
-    gift: 'Подарунок',
-  };
+  const { data: productTypes } = useQuery({
+    queryKey: ['product-types'],
+    queryFn: () => productTypesService.getAll(true), // Тільки активні типи
+  });
+
+  // Створюємо мапу типів для швидкого доступу
+  const productTypeMap = productTypes?.reduce((acc, type) => {
+    acc[type.name] = type.label;
+    return acc;
+  }, {} as Record<string, string>) || {};
 
   return (
     <Paper sx={{ p: 3, maxWidth: 400, mx: 'auto', mt: 2 }}>
@@ -78,7 +82,7 @@ const ProductPreview = ({ product }: ProductPreviewProps) => {
         {/* Тип */}
         {product.product_type && (
           <Chip
-            label={productTypeLabels[product.product_type] || product.product_type}
+            label={productTypeMap[product.product_type] || product.product_type}
             size="small"
             color="primary"
             sx={{ mb: 1 }}

@@ -29,11 +29,14 @@ import { FeedbackErrorReport, FeedbackErrorReportSchema } from '../common/schema
 import { AdminActivityLog, AdminActivityLogSchema } from '../common/schemas/admin-activity-log.schema';
 import { ShopProductCategory, ShopProductCategorySchema } from '../shop/schemas/shop-product-category.schema';
 import { ShopCategoriesAdminController } from './shop-categories-admin.controller';
+import { ProductTypesAdminController } from './product-types-admin.controller';
 import { FilesModule } from '../files/files.module';
+import { ShopModule } from '../shop/shop.module';
 
 @Module({
   imports: [
     FilesModule,
+    ShopModule,
     MongooseModule.forFeature([
       { name: AdminUser.name, schema: AdminUserSchema },
       { name: User.name, schema: UserSchema },
@@ -64,6 +67,7 @@ import { FilesModule } from '../files/files.module';
     QuestionCategoriesAdminController,
     KnowledgeBaseCategoriesAdminController,
     ShopCategoriesAdminController,
+    ProductTypesAdminController,
   ],
   providers: [AdminService, AdminExportService, SettingsService],
   exports: [AdminService, SettingsService, AdminExportService],

@@ -19,6 +19,7 @@ import AchievementFormPage from './pages/achievements/AchievementFormPage';
 import ShopPage from './pages/shop/ShopPage';
 import ShopProductFormPage from './pages/shop/ShopProductFormPage';
 import ShopCategoriesPage from './pages/shop-categories/ShopCategoriesPage';
+import ProductTypesPage from './pages/shop/ProductTypesPage';
 import QuestionCategoriesPage from './pages/question-categories/QuestionCategoriesPage';
 import KnowledgeBaseCategoriesPage from './pages/knowledge-base-categories/KnowledgeBaseCategoriesPage';
 import FeedbackPage from './pages/feedback/FeedbackPage';
@@ -67,6 +68,7 @@ function App() {
         <Route path="shop/products/new" element={<ShopProductFormPage />} />
         <Route path="shop/products/:id/edit" element={<ShopProductFormPage />} />
         <Route path="shop/categories" element={<ShopCategoriesPage />} />
+        <Route path="shop/product-types" element={<ProductTypesPage />} />
         <Route path="question-categories" element={<QuestionCategoriesPage />} />
         <Route path="knowledge-base/categories" element={<KnowledgeBaseCategoriesPage />} />
         <Route path="feedback" element={<FeedbackPage />} />

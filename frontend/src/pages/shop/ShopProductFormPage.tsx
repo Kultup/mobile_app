@@ -24,6 +24,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { shopService, CreateShopProductDto } from '../../services/shop.service';
 import { categoriesService } from '../../services/categories.service';
+import { productTypesService } from '../../services/product-types.service';
 import FileUpload from '../../components/FileUpload/FileUpload';
 import ProductPreview from '../../components/ProductPreview/ProductPreview';
 
@@ -45,15 +46,6 @@ const schema = yup.object({
   sort_order: yup.number().optional(),
 });
 
-const productTypeLabels: Record<string, string> = {
-  avatar: 'Аватарка',
-  profile_frame: 'Рамка профілю',
-  badge: 'Бейдж',
-  theme: 'Тема',
-  customization: 'Кастомізація',
-  gift: 'Подарунок',
-};
-
 const ShopProductFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -63,6 +55,11 @@ const ShopProductFormPage = () => {
   const { data: categoriesData } = useQuery({
     queryKey: ['shop-categories'],
     queryFn: () => categoriesService.getShopCategories(),
+  });
+
+  const { data: productTypesData } = useQuery({
+    queryKey: ['product-types'],
+    queryFn: () => productTypesService.getAll(true), // Тільки активні типи
   });
 
   const { data: product, isLoading: isLoadingProduct } = useQuery({
@@ -97,8 +94,8 @@ const ShopProductFormPage = () => {
   useEffect(() => {
     if (product && isEdit) {
       const baseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
-      // Перевіряємо, чи product_type є в стандартних типах
-      const isStandardType = Object.keys(productTypeLabels).includes(product.product_type);
+      // Перевіряємо, чи product_type є в базі даних
+      const isStandardType = productTypesData?.some((type) => type.name === product.product_type);
       
       reset({
         name: product.name,
@@ -257,9 +254,10 @@ const ShopProductFormPage = () => {
                   <FormControl fullWidth error={!!errors.product_type}>
                     <InputLabel>Тип товару</InputLabel>
                     <Select {...field} label="Тип товару">
-                      {Object.entries(productTypeLabels).map(([key, label]) => (
-                        <MenuItem key={key} value={key}>
-                          {label}
+                      {/* Типи з бази даних */}
+                      {productTypesData?.map((type) => (
+                        <MenuItem key={type._id} value={type.name}>
+                          {type.label}
                         </MenuItem>
                       ))}
                       <MenuItem value="custom">Інший (ввести назву)</MenuItem>

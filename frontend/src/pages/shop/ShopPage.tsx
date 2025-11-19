@@ -36,15 +36,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { shopService, ShopProduct } from '../../services/shop.service';
 import { shopStatsService } from '../../services/shop-stats.service';
-
-const productTypeLabels: Record<string, string> = {
-  avatar: 'Аватарка',
-  profile_frame: 'Рамка профілю',
-  badge: 'Бейдж',
-  theme: 'Тема',
-  customization: 'Кастомізація',
-  gift: 'Подарунок',
-};
+import { productTypesService } from '../../services/product-types.service';
 
 const ShopPage = () => {
   const navigate = useNavigate();
@@ -56,6 +48,17 @@ const ShopPage = () => {
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [statsPage, setStatsPage] = useState(1);
+
+  const { data: productTypes } = useQuery({
+    queryKey: ['product-types'],
+    queryFn: () => productTypesService.getAll(true), // Тільки активні типи
+  });
+
+  // Створюємо мапу типів для швидкого доступу
+  const productTypeMap = productTypes?.reduce((acc, type) => {
+    acc[type.name] = type.label;
+    return acc;
+  }, {} as Record<string, string>) || {};
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['shop-products', page, typeFilter],
@@ -147,9 +150,9 @@ const ShopPage = () => {
             }}
           >
             <MenuItem value="">Всі</MenuItem>
-            {Object.entries(productTypeLabels).map(([key, label]) => (
-              <MenuItem key={key} value={key}>
-                {label}
+            {productTypes?.map((type) => (
+              <MenuItem key={type._id} value={type.name}>
+                {type.label}
               </MenuItem>
             ))}
           </Select>
@@ -191,7 +194,7 @@ const ShopPage = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={productTypeLabels[product.product_type] || product.product_type}
+                        label={productTypeMap[product.product_type] || product.product_type}
                         size="small"
                         color="primary"
                         variant="outlined"
@@ -260,7 +263,7 @@ const ShopPage = () => {
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={productTypeLabels[product.product_type] || product.product_type}
+                      label={productTypeMap[product.product_type] || product.product_type}
                       size="small"
                       color="primary"
                       variant="outlined"

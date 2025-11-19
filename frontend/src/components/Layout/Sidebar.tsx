@@ -69,6 +69,7 @@ const menuItems: MenuItem[] = [
     children: [
       { text: 'Всі товари', icon: <ShoppingCartIcon />, path: '/shop', exact: true },
       { text: 'Категорії магазину', icon: <CategoryIcon />, path: '/shop/categories' },
+      { text: 'Типи товарів', icon: <CategoryIcon />, path: '/shop/product-types' },
     ],
   },
   { text: 'Зворотний зв\'язок', icon: <FeedbackIcon />, path: '/feedback', exact: true },
