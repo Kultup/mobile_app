@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Res, Inject, forwardRef } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Res, Inject, forwardRef } from '@nestjs/common';
 import { Response } from 'express';
 import { SurveysService } from './surveys.service';
 import { AdminExportService } from '../admin/admin-export.service';

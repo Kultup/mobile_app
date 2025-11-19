@@ -30,7 +30,20 @@ const schema = yup.object({
   description: yup.string().required('Опис обов\'язковий'),
   icon_url: yup.string().required('Іконка обов\'язкова'),
   category: yup.string().oneOf(['testing', 'activity', 'accuracy', 'rating', 'special'] as const).required('Категорія обов\'язкова'),
-  condition_type: yup.string().oneOf(['tests_count', 'streak', 'perfect_tests', 'rating_position'] as const).required('Тип умови обов\'язковий'),
+  condition_type: yup.string().oneOf([
+    'tests_count',
+    'streak',
+    'perfect_tests',
+    'rating_position',
+    'total_points',
+    'correct_answers_count',
+    'average_score',
+    'consecutive_perfect_tests',
+    'longest_streak',
+    'shop_purchases_count',
+    'total_correct_answers',
+    'accuracy_percentage',
+  ] as const).required('Тип умови обов\'язковий'),
   condition_value: yup.number().required('Значення умови обов\'язкове').min(1, 'Значення має бути більше 0'),
   reward_points: yup.number().min(0, 'Бали не можуть бути від\'ємними').optional(),
   is_active: yup.boolean().optional(),
@@ -47,9 +60,17 @@ const categoryLabels: Record<string, string> = {
 
 const conditionLabels: Record<string, string> = {
   tests_count: 'Кількість тестів',
-  streak: 'Серія днів',
-  perfect_tests: 'Ідеальні тести',
-  rating_position: 'Позиція в рейтингу',
+  streak: 'Серія днів (поточна)',
+  longest_streak: 'Найдовша серія днів',
+  perfect_tests: 'Ідеальні тести (5/5)',
+  consecutive_perfect_tests: 'Послідовні ідеальні тести',
+  rating_position: 'Позиція в рейтингу (≤)',
+  total_points: 'Загальна кількість балів',
+  correct_answers_count: 'Кількість правильних відповідей',
+  total_correct_answers: 'Загальна кількість правильних відповідей',
+  average_score: 'Середній бал (≥)',
+  accuracy_percentage: 'Відсоток правильності (≥)',
+  shop_purchases_count: 'Кількість покупок',
 };
 
 const AchievementFormPage = () => {

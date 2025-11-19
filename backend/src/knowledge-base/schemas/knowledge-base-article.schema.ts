@@ -14,6 +14,9 @@ export class KnowledgeBaseArticle {
   @Prop({ type: Types.ObjectId, ref: 'KnowledgeBaseCategory', required: true })
   category_id: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Position' })
+  position_id: Types.ObjectId;
+
   @Prop()
   image_url: string;
 
@@ -31,6 +34,7 @@ export const KnowledgeBaseArticleSchema = SchemaFactory.createForClass(Knowledge
 
 // Indexes
 KnowledgeBaseArticleSchema.index({ category_id: 1, is_active: 1 });
+KnowledgeBaseArticleSchema.index({ position_id: 1, is_active: 1 });
 // Text search index (MongoDB text index)
 KnowledgeBaseArticleSchema.index({ title: 'text', content: 'text' });
 

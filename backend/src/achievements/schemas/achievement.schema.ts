@@ -18,10 +18,13 @@ export class Achievement {
   category: string; // 'testing', 'activity', 'accuracy', 'rating', 'special'
 
   @Prop({ required: true })
-  condition_type: string; // 'tests_count', 'streak', 'perfect_tests', 'rating_position'
+  condition_type: string; // 'tests_count', 'streak', 'perfect_tests', 'rating_position', 'total_points', 'correct_answers_count', 'average_score', 'consecutive_perfect_tests', 'longest_streak', 'shop_purchases_count', 'total_correct_answers', 'accuracy_percentage'
 
   @Prop({ required: true })
   condition_value: number;
+
+  @Prop({ type: Object, required: false })
+  condition_extra?: any; // Додаткові параметри (наприклад, category_id для tests_in_category)
 
   @Prop({ default: 0 })
   reward_points: number;

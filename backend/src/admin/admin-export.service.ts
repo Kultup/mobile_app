@@ -54,7 +54,7 @@ export class AdminExportService {
       });
     });
 
-    return workbook.xlsx.writeBuffer();
+    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }
 
   async exportSurveyResponsesToExcel(surveyId: string): Promise<Buffer> {
@@ -86,11 +86,11 @@ export class AdminExportService {
         rating: response.rating || '',
         response_text: response.response_text || '',
         selected_options: response.selected_options?.join(', ') || '',
-        date: new Date(response.createdAt).toLocaleDateString('uk-UA'),
+        date: (response as any).createdAt ? new Date((response as any).createdAt).toLocaleDateString('uk-UA') : new Date().toLocaleDateString('uk-UA'),
       });
     });
 
-    return workbook.xlsx.writeBuffer();
+    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }
 
   async exportTestHistoryToExcel(userId?: string): Promise<Buffer> {
@@ -124,11 +124,11 @@ export class AdminExportService {
         correct_answers: test.correct_answers || 0,
         total_questions: test.questions_count || (test.answers?.length || 0),
         score: test.score || 0,
-        completed_at: test.completed_at ? new Date(test.completed_at).toLocaleDateString('uk-UA') : (test.updatedAt ? new Date(test.updatedAt).toLocaleDateString('uk-UA') : ''),
+        completed_at: test.completed_at ? new Date(test.completed_at).toLocaleDateString('uk-UA') : ((test as any).updatedAt ? new Date((test as any).updatedAt).toLocaleDateString('uk-UA') : ''),
       });
     });
 
-    return workbook.xlsx.writeBuffer();
+    return (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
   }
 }
 

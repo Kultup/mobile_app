@@ -55,6 +55,11 @@ export class AchievementsCheckerService {
           isCompleted = progress >= achievement.condition_value;
           break;
 
+        case 'longest_streak':
+          progress = user.longest_streak;
+          isCompleted = progress >= achievement.condition_value;
+          break;
+
         case 'perfect_tests':
           // Підрахувати ідеальні тести (5/5)
           const perfectTests = await this.userTestModel.countDocuments({
@@ -67,9 +72,94 @@ export class AchievementsCheckerService {
           isCompleted = progress >= achievement.condition_value;
           break;
 
+        case 'consecutive_perfect_tests':
+          // Підрахувати послідовні ідеальні тести
+          const allTests = await this.userTestModel
+            .find({ user_id: userId, is_completed: true })
+            .sort({ test_date: -1 })
+            .exec();
+          
+          let consecutivePerfect = 0;
+          for (const test of allTests) {
+            if (test.correct_answers === test.questions_count) {
+              consecutivePerfect++;
+            } else {
+              break;
+            }
+          }
+          progress = consecutivePerfect;
+          isCompleted = progress >= achievement.condition_value;
+          break;
+
+        case 'total_points':
+          progress = user.total_score;
+          isCompleted = progress >= achievement.condition_value;
+          break;
+
+        case 'correct_answers_count':
+        case 'total_correct_answers':
+          // Загальна кількість правильних відповідей
+          const allCompletedTests = await this.userTestModel
+            .find({ user_id: userId, is_completed: true })
+            .exec();
+          const totalCorrect = allCompletedTests.reduce((sum, test) => sum + test.correct_answers, 0);
+          progress = totalCorrect;
+          isCompleted = progress >= achievement.condition_value;
+          break;
+
+        case 'average_score':
+          // Середній бал (середнє значення score)
+          const testsForAverage = await this.userTestModel
+            .find({ user_id: userId, is_completed: true })
+            .exec();
+          if (testsForAverage.length > 0) {
+            const totalScore = testsForAverage.reduce((sum, test) => sum + (test.score || 0), 0);
+            const average = totalScore / testsForAverage.length;
+            progress = Math.round(average * 100) / 100; // Округлити до 2 знаків
+            isCompleted = progress >= achievement.condition_value;
+          } else {
+            progress = 0;
+            isCompleted = false;
+          }
+          break;
+
+        case 'accuracy_percentage':
+          // Відсоток правильності
+          const testsForAccuracy = await this.userTestModel
+            .find({ user_id: userId, is_completed: true })
+            .exec();
+          if (testsForAccuracy.length > 0) {
+            const totalCorrectAnswers = testsForAccuracy.reduce((sum, test) => sum + test.correct_answers, 0);
+            const totalQuestions = testsForAccuracy.reduce((sum, test) => sum + test.questions_count, 0);
+            const accuracy = totalQuestions > 0 ? (totalCorrectAnswers / totalQuestions) * 100 : 0;
+            progress = Math.round(accuracy * 100) / 100; // Округлити до 2 знаків
+            isCompleted = progress >= achievement.condition_value;
+          } else {
+            progress = 0;
+            isCompleted = false;
+          }
+          break;
+
+        case 'shop_purchases_count':
+          // Кількість покупок в магазині
+          const purchases = await this.pointsTransactionModel.countDocuments({
+            user_id: userId,
+            transaction_type: 'purchase',
+          }).exec();
+          progress = purchases;
+          isCompleted = progress >= achievement.condition_value;
+          break;
+
         case 'rating_position':
-          // TODO: Реалізувати перевірку позиції в рейтингу
-          // Потрібно підрахувати позицію користувача в глобальному рейтингу
+          // Позиція в глобальному рейтингу
+          const usersWithHigherScore = await this.userModel.countDocuments({
+            is_active: true,
+            total_score: { $gt: user.total_score },
+          }).exec();
+          const position = usersWithHigherScore + 1;
+          progress = position;
+          // Для позиції в рейтингу менше значення = краще (1-ше місце краще за 10-те)
+          isCompleted = position <= achievement.condition_value;
           break;
       }
 

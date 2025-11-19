@@ -13,9 +13,10 @@ export interface UploadVideoResponse extends UploadFileResponse {
 }
 
 export const filesService = {
-  uploadImage: async (file: File): Promise<UploadFileResponse> => {
+  uploadImage: async (file: File, folderType: 'questions' | 'articles' = 'articles'): Promise<UploadFileResponse> => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('folderType', folderType);
 
     const { data } = await api.post('/files/upload', formData, {
       headers: {
@@ -37,9 +38,24 @@ export const filesService = {
     return data;
   },
 
-  uploadFile: async (file: File, type: 'image' | 'video'): Promise<UploadFileResponse | UploadVideoResponse> => {
+  uploadPdf: async (file: File, folderType: 'questions' | 'articles' = 'articles'): Promise<UploadFileResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folderType', folderType);
+
+    const { data } = await api.post('/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return data;
+  },
+
+  uploadFile: async (file: File, type: 'image' | 'video' | 'pdf', folderType: 'questions' | 'articles' = 'articles'): Promise<UploadFileResponse | UploadVideoResponse> => {
     if (type === 'image') {
-      return filesService.uploadImage(file);
+      return filesService.uploadImage(file, folderType);
+    } else if (type === 'pdf') {
+      return filesService.uploadPdf(file, folderType);
     } else {
       return filesService.uploadVideo(file);
     }

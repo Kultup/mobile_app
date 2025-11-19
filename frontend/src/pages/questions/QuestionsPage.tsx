@@ -34,8 +34,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ToggleOnIcon from '@mui/icons-material/ToggleOn';
+import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { questionsService, Question } from '../../services/questions.service';
+import { positionsService } from '../../services/positions.service';
 
 const QuestionsPage = () => {
   const navigate = useNavigate();
@@ -43,20 +46,27 @@ const QuestionsPage = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<boolean | undefined>(undefined);
+  const [positionFilter, setPositionFilter] = useState<string>('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
 
+  const { data: positionsData } = useQuery({
+    queryKey: ['positions'],
+    queryFn: () => positionsService.getAll(true),
+  });
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['questions', page, search, activeFilter],
+    queryKey: ['questions', page, search, activeFilter, positionFilter],
     queryFn: () =>
       questionsService.getAll({
         page,
         per_page: 20,
         search: search || undefined,
         is_active: activeFilter,
+        position_id: positionFilter || undefined,
       }),
   });
 
@@ -66,6 +76,18 @@ const QuestionsPage = () => {
       queryClient.invalidateQueries({ queryKey: ['questions'] });
       setDeleteDialogOpen(false);
       setQuestionToDelete(null);
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
+      questionsService.toggleActive(id, is_active),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['questions'] });
+    },
+    onError: (error: any) => {
+      console.error('Помилка перемикання активності питання:', error);
+      alert(`Помилка: ${error.response?.data?.message || error.message || 'Невідома помилка'}`);
     },
   });
 
@@ -188,6 +210,26 @@ const QuestionsPage = () => {
           }}
           sx={{ minWidth: 250 }}
         />
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel>Посада</InputLabel>
+          <Select
+            value={positionFilter}
+            label="Посада"
+            onChange={(e) => {
+              setPositionFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <MenuItem value="">Всі посади</MenuItem>
+            {positionsData?.data
+              ?.filter((position) => position.is_active !== false)
+              .map((position) => (
+                <MenuItem key={position._id} value={position._id}>
+                  {position.name}
+                </MenuItem>
+              ))}
+          </Select>
+        </FormControl>
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Статус</InputLabel>
           <Select
@@ -211,6 +253,7 @@ const QuestionsPage = () => {
           <TableHead>
             <TableRow>
               <TableCell>Текст питання</TableCell>
+              <TableCell>Посада</TableCell>
               <TableCell>Тип</TableCell>
               <TableCell>Медіа</TableCell>
               <TableCell>Статус</TableCell>
@@ -220,7 +263,7 @@ const QuestionsPage = () => {
           <TableBody>
             {data?.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={6} align="center">
                   <Typography color="text.secondary" sx={{ py: 3 }}>
                     Питань не знайдено
                   </Typography>
@@ -233,6 +276,19 @@ const QuestionsPage = () => {
                     <Typography variant="body2" sx={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {question.question_text}
                     </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {question.position_id ? (
+                      <Chip
+                        label={typeof question.position_id === 'object' ? question.position_id.name : question.position_id}
+                        size="small"
+                        variant="outlined"
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Без посади
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -253,17 +309,30 @@ const QuestionsPage = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={question.is_active ? 'Активне' : 'Неактивне'}
+                    <IconButton
                       size="small"
+                      onClick={() => {
+                        toggleActiveMutation.mutate({
+                          id: question._id,
+                          is_active: !question.is_active,
+                        });
+                      }}
+                      disabled={toggleActiveMutation.isPending}
                       color={question.is_active ? 'success' : 'default'}
-                    />
+                      title={question.is_active ? 'Відключити питання' : 'Увімкнути питання'}
+                    >
+                      {question.is_active ? <ToggleOnIcon /> : <ToggleOffIcon />}
+                    </IconButton>
+                    <Typography variant="caption" sx={{ ml: 1 }}>
+                      {question.is_active ? 'Активне' : 'Неактивне'}
+                    </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <IconButton
                       size="small"
                       onClick={() => navigate(`/questions/${question._id}/edit`)}
                       color="primary"
+                      title="Редагувати питання"
                     >
                       <EditIcon />
                     </IconButton>
@@ -271,6 +340,7 @@ const QuestionsPage = () => {
                       size="small"
                       onClick={() => handleDelete(question._id)}
                       color="error"
+                      title="Видалити питання"
                     >
                       <DeleteIcon />
                     </IconButton>

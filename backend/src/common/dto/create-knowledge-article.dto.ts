@@ -13,6 +13,10 @@ export class CreateKnowledgeArticleDto {
   @IsNotEmpty()
   category_id: string;
 
+  @IsMongoId()
+  @IsOptional()
+  position_id?: string;
+
   @IsString()
   @IsOptional()
   image_url?: string;

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { QuestionsService } from './questions.service';
 import { QuestionsImportService } from './questions-import.service';
@@ -8,6 +8,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { CreateQuestionDto } from '../common/dto/create-question.dto';
 import { UpdateQuestionDto } from '../common/dto/update-question.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { ToggleActiveDto } from '../common/dto/toggle-active.dto';
 
 @Controller('questions')
 export class QuestionsController {
@@ -18,7 +19,7 @@ export class QuestionsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll(@Query() query: PaginationDto & { category_id?: string; is_active?: boolean; search?: string }) {
+  async findAll(@Query() query: PaginationDto & { category_id?: string; position_id?: string; is_active?: boolean; search?: string }) {
     return this.questionsService.findAll(query);
   }
 
@@ -28,10 +29,11 @@ export class QuestionsController {
     return this.questionsService.getCategories();
   }
 
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  async findOne(@Param('id') id: string) {
-    return this.questionsService.findOne(id);
+  @Patch('toggle-active/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'training_admin')
+  async toggleActive(@Param('id') id: string, @Body() body: ToggleActiveDto) {
+    return this.questionsService.toggleActive(id, body.is_active);
   }
 
   @Post()
@@ -39,6 +41,12 @@ export class QuestionsController {
   @Roles('super_admin', 'training_admin')
   async create(@Body() createDto: CreateQuestionDto) {
     return this.questionsService.create(createDto);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async findOne(@Param('id') id: string) {
+    return this.questionsService.findOne(id);
   }
 
   @Put(':id')

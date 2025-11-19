@@ -25,7 +25,11 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { questionsService, CreateQuestionDto } from '../../services/questions.service';
+import { knowledgeBaseService } from '../../services/knowledge-base.service';
+import { categoriesService } from '../../services/categories.service';
+import { positionsService } from '../../services/positions.service';
 import FileUpload from '../../components/FileUpload/FileUpload';
+import QuestionPreview from '../../components/QuestionPreview/QuestionPreview';
 
 const answerSchema = yup.object({
   answer_text: yup.string().required('Текст відповіді обов\'язковий'),
@@ -35,6 +39,7 @@ const answerSchema = yup.object({
 
 const schema = yup.object({
   category_id: yup.string().required('Категорія обов\'язкова'),
+  position_id: yup.string().nullable().optional(),
   question_text: yup.string().required('Текст питання обов\'язковий'),
   question_type: yup.string().oneOf(['single_choice', 'multiple_choice', 'text'] as const).optional(),
   media_type: yup.string().oneOf(['none', 'image', 'video'] as const).optional(),
@@ -65,6 +70,21 @@ const QuestionFormPage = () => {
     enabled: isEdit,
   });
 
+  const { data: articlesData } = useQuery({
+    queryKey: ['knowledge-base-articles', 'all'],
+    queryFn: () => knowledgeBaseService.getAll({ page: 1, per_page: 1000 }),
+  });
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ['question-categories'],
+    queryFn: () => categoriesService.getQuestionCategories(true),
+  });
+
+  const { data: positionsData } = useQuery({
+    queryKey: ['positions'],
+    queryFn: () => positionsService.getAll(true),
+  });
+
   const {
     control,
     handleSubmit,
@@ -76,6 +96,7 @@ const QuestionFormPage = () => {
     resolver: yupResolver(schema) as any,
     defaultValues: {
       category_id: '',
+      position_id: '',
       question_text: '',
       question_type: 'single_choice',
       media_type: 'none',
@@ -88,6 +109,8 @@ const QuestionFormPage = () => {
       answers: [
         { answer_text: '', is_correct: false, sort_order: 0 },
         { answer_text: '', is_correct: false, sort_order: 1 },
+        { answer_text: '', is_correct: false, sort_order: 2 },
+        { answer_text: '', is_correct: false, sort_order: 3 },
       ],
     },
   });
@@ -111,6 +134,7 @@ const QuestionFormPage = () => {
 
       reset({
         category_id: question.category_id._id,
+        position_id: question.position_id?._id || '',
         question_text: question.question_text,
         question_type: question.question_type,
         media_type: question.media_type,
@@ -147,10 +171,16 @@ const QuestionFormPage = () => {
   });
 
   const onSubmit = (data: any) => {
+    // Remove empty position_id
+    const submitData = { ...data };
+    if (!submitData.position_id || submitData.position_id === '') {
+      delete submitData.position_id;
+    }
+
     if (isEdit) {
-      updateMutation.mutate(data as CreateQuestionDto);
+      updateMutation.mutate(submitData as CreateQuestionDto);
     } else {
-      createMutation.mutate(data as CreateQuestionDto);
+      createMutation.mutate(submitData as CreateQuestionDto);
     }
   };
 
@@ -197,18 +227,56 @@ const QuestionFormPage = () => {
       <Paper sx={{ p: 3 }}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6}>
               <Controller
                 name="category_id"
                 control={control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    label="ID категорії"
-                    error={!!errors.category_id}
-                    helperText={errors.category_id?.message as string}
-                  />
+                  <FormControl fullWidth error={!!errors.category_id}>
+                    <InputLabel>Категорія *</InputLabel>
+                    <Select {...field} label="Категорія *" value={field.value || ''}>
+                      <MenuItem value="">Виберіть категорію</MenuItem>
+                      {categoriesData?.data
+                        ?.filter((category) => category.is_active !== false)
+                        .map((category) => (
+                          <MenuItem key={category._id} value={category._id}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                    {errors.category_id && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                        {errors.category_id.message as string}
+                      </Typography>
+                    )}
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Controller
+                name="position_id"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={!!errors.position_id}>
+                    <InputLabel>Посада (опційно)</InputLabel>
+                    <Select {...field} label="Посада (опційно)" value={field.value || ''}>
+                      <MenuItem value="">Без прив'язки до посади</MenuItem>
+                      {positionsData?.data
+                        ?.filter((position) => position.is_active !== false)
+                        .map((position) => (
+                          <MenuItem key={position._id} value={position._id}>
+                            {position.name}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                    {errors.position_id && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                        {errors.position_id.message as string}
+                      </Typography>
+                    )}
+                  </FormControl>
                 )}
               />
             </Grid>
@@ -284,6 +352,7 @@ const QuestionFormPage = () => {
                         accept="image/jpeg,image/jpg,image/png"
                         maxSize={10}
                         label="Завантажити зображення"
+                        folderType="questions"
                       />
                       {field.value && (
                         <TextField
@@ -327,6 +396,7 @@ const QuestionFormPage = () => {
                           accept="video/mp4,video/mov,video/quicktime"
                           maxSize={50}
                           label="Завантажити відео"
+                          folderType="questions"
                         />
                         {field.value && (
                           <TextField
@@ -376,6 +446,28 @@ const QuestionFormPage = () => {
                     error={!!errors.explanation}
                     helperText={errors.explanation?.message as string}
                   />
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Controller
+                name="knowledge_base_article_id"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth>
+                    <InputLabel>Стаття бази знань (опційно)</InputLabel>
+                    <Select {...field} label="Стаття бази знань (опційно)" value={field.value || ''}>
+                      <MenuItem value="">Без статті</MenuItem>
+                      {articlesData?.data
+                        .filter((article) => article.is_active !== false)
+                        .map((article) => (
+                          <MenuItem key={article._id} value={article._id}>
+                            {article.title}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
                 )}
               />
             </Grid>
@@ -462,6 +554,30 @@ const QuestionFormPage = () => {
           </Grid>
         </form>
       </Paper>
+
+      {/* Preview питання */}
+      {(watch('question_text') || watch('image_url') || watch('video_url')) && (
+        <QuestionPreview
+          question={{
+            _id: id || '',
+            question_text: watch('question_text') || 'Прев\'ю буде згенеровано автоматично після завантаження',
+            question_type: watch('question_type') || 'single_choice',
+            media_type: watch('media_type') || 'none',
+            image_url: watch('image_url') || '',
+            video_url: watch('video_url') || '',
+            video_thumbnail_url: watch('video_thumbnail_url') || '',
+            explanation: watch('explanation') || '',
+            knowledge_base_article_id: watch('knowledge_base_article_id')
+              ? { _id: watch('knowledge_base_article_id'), title: '' }
+              : undefined,
+            answers: watch('answers') || [],
+            category_id: { _id: '', name: '' },
+            is_active: true,
+            created_at: '',
+            updated_at: '',
+          }}
+        />
+      )}
     </Box>
   );
 };

@@ -5,6 +5,18 @@ export interface DashboardData {
   active_today: number;
   tests_completed: number;
   completion_rate: number;
+  top_cities?: Array<{ city_id: string; city_name: string; userCount: number }>;
+  top_positions?: Array<{ position_id: string; position_name: string; userCount: number }>;
+  activity_last_7_days?: Array<{ date: string; completed: number; total: number }>;
+  recent_activity?: Array<{
+    id: string;
+    admin_user: string;
+    action: string;
+    entity_type: string;
+    description: string;
+    created_at: string;
+  }>;
+  heatmap_data?: Array<{ date: string; count: number }>;
 }
 
 export interface User {
@@ -56,6 +68,11 @@ export const adminService = {
 
   deleteUser: async (id: string): Promise<void> => {
     await api.delete(`/admin/users/${id}`);
+  },
+
+  getUserDetails: async (id: string) => {
+    const { data } = await api.get(`/admin/users/${id}/details`);
+    return data;
   },
 };
 

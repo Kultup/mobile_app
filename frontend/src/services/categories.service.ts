@@ -45,10 +45,16 @@ export const categoriesService = {
 
   // Knowledge Base Categories
   getKnowledgeBaseCategories: async (includeInactive?: boolean): Promise<{ data: Category[] }> => {
-    const { data } = await api.get('/admin/knowledge-base/categories', {
-      params: includeInactive ? { include_inactive: 'true' } : {},
-    });
-    return data;
+    try {
+      const { data } = await api.get('/admin/knowledge-base/categories', {
+        params: includeInactive ? { include_inactive: 'true' } : {},
+      });
+      console.log('[categoriesService] getKnowledgeBaseCategories response:', data);
+      return data;
+    } catch (error: any) {
+      console.error('[categoriesService] getKnowledgeBaseCategories error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   getKnowledgeBaseCategory: async (id: string): Promise<Category> => {
@@ -68,6 +74,31 @@ export const categoriesService = {
 
   deleteKnowledgeBaseCategory: async (id: string): Promise<void> => {
     await api.delete(`/admin/knowledge-base/categories/${id}`);
+  },
+
+  // Shop Product Categories
+  getShopCategories: async (): Promise<{ data: Category[] }> => {
+    const { data } = await api.get('/admin/shop/categories');
+    return data;
+  },
+
+  getShopCategory: async (id: string): Promise<Category> => {
+    const { data } = await api.get(`/admin/shop/categories/${id}`);
+    return data;
+  },
+
+  createShopCategory: async (category: CreateCategoryDto): Promise<Category> => {
+    const { data } = await api.post('/admin/shop/categories', category);
+    return data;
+  },
+
+  updateShopCategory: async (id: string, category: CreateCategoryDto): Promise<Category> => {
+    const { data } = await api.put(`/admin/shop/categories/${id}`, category);
+    return data;
+  },
+
+  deleteShopCategory: async (id: string): Promise<void> => {
+    await api.delete(`/admin/shop/categories/${id}`);
   },
 };
 

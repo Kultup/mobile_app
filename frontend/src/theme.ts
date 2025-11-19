@@ -1,6 +1,6 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, ThemeOptions } from '@mui/material/styles';
 
-export const theme = createTheme({
+const baseTheme: ThemeOptions = {
   palette: {
     primary: {
       main: '#FF6B35',
@@ -25,10 +25,6 @@ export const theme = createTheme({
     },
     info: {
       main: '#2196F3',
-    },
-    background: {
-      default: '#F5F5F5',
-      paper: '#FFFFFF',
     },
   },
   typography: {
@@ -88,5 +84,32 @@ export const theme = createTheme({
       },
     },
   },
+};
+
+export const lightTheme = createTheme({
+  ...baseTheme,
+  palette: {
+    ...baseTheme.palette,
+    mode: 'light',
+    background: {
+      default: '#F5F5F5',
+      paper: '#FFFFFF',
+    },
+  },
 });
+
+export const darkTheme = createTheme({
+  ...baseTheme,
+  palette: {
+    ...baseTheme.palette,
+    mode: 'dark',
+    background: {
+      default: '#121212',
+      paper: '#1E1E1E',
+    },
+  },
+});
+
+// Для зворотної сумісності
+export const theme = lightTheme;
 

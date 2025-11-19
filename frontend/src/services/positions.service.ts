@@ -3,6 +3,7 @@ import api from './api';
 export interface Position {
   _id: string;
   name: string;
+  category_ids?: string[] | Array<{ _id: string; name: string }>;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -10,6 +11,7 @@ export interface Position {
 
 export interface CreatePositionDto {
   name: string;
+  category_ids?: string[];
   is_active?: boolean;
 }
 

@@ -18,6 +18,10 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   category_id: string;
 
+  @IsMongoId()
+  @IsOptional()
+  position_id?: string;
+
   @IsString()
   @IsNotEmpty()
   question_text: string;

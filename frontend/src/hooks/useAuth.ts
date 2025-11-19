@@ -7,12 +7,28 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // TODO: Verify token and get user
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // Перевірити токен через API
+          const profile = await authService.getProfile();
+          setUser(profile.user || profile);
+          setIsAuthenticated(true);
+        } catch (error) {
+          // Токен невалідний або застарілий
+          localStorage.removeItem('token');
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (username: string, password: string) => {
@@ -22,7 +38,8 @@ export const useAuth = () => {
       setUser(response.user);
       setIsAuthenticated(true);
       return response;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[useAuth] Login failed:', error.response?.data || error.message);
       throw error;
     }
   };
@@ -31,6 +48,12 @@ export const useAuth = () => {
     await authService.logout();
     setIsAuthenticated(false);
     setUser(null);
+    // Видалити токен
+    localStorage.removeItem('token');
+    // Опціонально: видалити збережені дані для входу (для безпеки)
+    // localStorage.removeItem('admin_remembered_username');
+    // localStorage.removeItem('admin_remembered_password');
+    // localStorage.removeItem('admin_remember_me');
   };
 
   return {

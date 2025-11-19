@@ -6,8 +6,9 @@ export interface Achievement {
   description: string;
   icon_url: string;
   category: 'testing' | 'activity' | 'accuracy' | 'rating' | 'special';
-  condition_type: 'tests_count' | 'streak' | 'perfect_tests' | 'rating_position';
+  condition_type: 'tests_count' | 'streak' | 'perfect_tests' | 'rating_position' | 'total_points' | 'correct_answers_count' | 'average_score' | 'consecutive_perfect_tests' | 'longest_streak' | 'shop_purchases_count' | 'total_correct_answers' | 'accuracy_percentage';
   condition_value: number;
+  condition_extra?: any;
   reward_points: number;
   is_active: boolean;
   sort_order: number;
@@ -20,8 +21,9 @@ export interface CreateAchievementDto {
   description: string;
   icon_url: string;
   category: 'testing' | 'activity' | 'accuracy' | 'rating' | 'special';
-  condition_type: 'tests_count' | 'streak' | 'perfect_tests' | 'rating_position';
+  condition_type: 'tests_count' | 'streak' | 'perfect_tests' | 'rating_position' | 'total_points' | 'correct_answers_count' | 'average_score' | 'consecutive_perfect_tests' | 'longest_streak' | 'shop_purchases_count' | 'total_correct_answers' | 'accuracy_percentage';
   condition_value: number;
+  condition_extra?: any;
   reward_points: number;
   is_active?: boolean;
   sort_order?: number;

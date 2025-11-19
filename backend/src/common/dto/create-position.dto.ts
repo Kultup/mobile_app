@@ -1,9 +1,14 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsArray, IsMongoId } from 'class-validator';
 
 export class CreatePositionDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  category_ids?: string[];
 
   @IsBoolean()
   @IsOptional()

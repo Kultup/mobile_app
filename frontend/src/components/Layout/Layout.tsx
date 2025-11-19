@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import Breadcrumbs from '../Breadcrumbs/Breadcrumbs';
 
 const Layout = () => {
   return (
@@ -9,7 +10,8 @@ const Layout = () => {
       <Sidebar />
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         <Header />
-        <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: '#F5F5F5' }}>
+        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+          <Breadcrumbs />
           <Outlet />
         </Box>
       </Box>

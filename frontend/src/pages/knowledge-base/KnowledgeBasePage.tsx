@@ -15,10 +15,6 @@ import {
   Chip,
   TextField,
   InputAdornment,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Pagination,
   CircularProgress,
   Alert,
@@ -27,12 +23,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  DialogContent as MuiDialogContent,
 } from '@mui/material';
+import ReactMarkdown from 'react-markdown';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { knowledgeBaseService, KnowledgeBaseArticle } from '../../services/knowledge-base.service';
 
@@ -43,6 +42,8 @@ const KnowledgeBasePage = () => {
   const [search, setSearch] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<string | null>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [articleToPreview, setArticleToPreview] = useState<KnowledgeBaseArticle | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['knowledge-base-articles', page, search],
@@ -77,6 +78,11 @@ const KnowledgeBasePage = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setPage(1);
+  };
+
+  const handlePreview = (article: KnowledgeBaseArticle) => {
+    setArticleToPreview(article);
+    setPreviewDialogOpen(true);
   };
 
   if (isLoading) {
@@ -172,8 +178,17 @@ const KnowledgeBasePage = () => {
                   <TableCell align="right">
                     <IconButton
                       size="small"
+                      onClick={() => handlePreview(article)}
+                      color="info"
+                      title="Переглянути статтю"
+                    >
+                      <OpenInNewIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
                       onClick={() => navigate(`/knowledge-base/articles/${article._id}/edit`)}
                       color="primary"
+                      title="Редагувати статтю"
                     >
                       <EditIcon />
                     </IconButton>
@@ -181,6 +196,7 @@ const KnowledgeBasePage = () => {
                       size="small"
                       onClick={() => handleDelete(article._id)}
                       color="error"
+                      title="Видалити статтю"
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -215,6 +231,225 @@ const KnowledgeBasePage = () => {
           <Button onClick={confirmDelete} color="error" variant="contained" disabled={deleteMutation.isPending}>
             {deleteMutation.isPending ? <CircularProgress size={20} /> : 'Видалити'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={previewDialogOpen}
+        onClose={() => setPreviewDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {articleToPreview?.title}
+        </DialogTitle>
+        <MuiDialogContent dividers>
+          {articleToPreview && (
+            <Box>
+              <Box sx={{ mb: 2 }}>
+                <Chip
+                  label={articleToPreview.category_id?.name || 'Без категорії'}
+                  size="small"
+                  sx={{ mr: 1 }}
+                />
+                {articleToPreview.position_id && (
+                  <Chip
+                    label={`Посада: ${typeof articleToPreview.position_id === 'object' ? articleToPreview.position_id.name : articleToPreview.position_id}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ mr: 1 }}
+                  />
+                )}
+                <Chip
+                  label={`Перегляди: ${articleToPreview.views_count}`}
+                  size="small"
+                  variant="outlined"
+                />
+              </Box>
+              
+              {articleToPreview.image_url && (() => {
+                // Обробка image_url для коректного відображення
+                let imageUrl = articleToPreview.image_url.trim();
+                const originalUrl = imageUrl;
+                
+                // Детальне логування для діагностики
+                console.log('[KnowledgeBasePage] Processing image URL:', {
+                  original: originalUrl,
+                  type: typeof imageUrl,
+                });
+                
+                // Якщо це вже повний URL, виправляємо подвоєння /api/v1
+                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                  imageUrl = imageUrl.replace(/\/api\/v1\/api\/v1\//g, '/api/v1/');
+                  console.log('[KnowledgeBasePage] Full URL detected, fixed:', imageUrl);
+                } else if (!imageUrl.startsWith('blob:')) {
+                  // Якщо це відносний шлях, конвертуємо в повний URL
+                  const baseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api/v1';
+                  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+                  
+                  console.log('[KnowledgeBasePage] Relative URL detected:', {
+                    original: imageUrl,
+                    baseUrl,
+                    normalizedBaseUrl,
+                  });
+                  
+                  // Видаляємо /api/v1 з початку, якщо воно є і baseUrl вже містить /api/v1
+                  if (imageUrl.startsWith('/api/v1/')) {
+                    imageUrl = imageUrl.replace(/^\/api\/v1/, '');
+                    console.log('[KnowledgeBasePage] Removed /api/v1 prefix:', imageUrl);
+                  }
+                  
+                  // Додаємо baseUrl
+                  if (imageUrl.startsWith('/')) {
+                    imageUrl = `${normalizedBaseUrl}${imageUrl}`;
+                  } else {
+                    imageUrl = `${normalizedBaseUrl}/${imageUrl}`;
+                  }
+                  
+                  // Фінальна перевірка на подвоєння
+                  imageUrl = imageUrl.replace(/\/api\/v1\/api\/v1\//g, '/api/v1/');
+                  
+                  console.log('[KnowledgeBasePage] Final URL:', imageUrl);
+                }
+                
+                return (
+                  <Box sx={{ mb: 2 }}>
+                    <img
+                      src={imageUrl}
+                      alt={articleToPreview.title}
+                      onError={(e) => {
+                        console.error('[KnowledgeBasePage] Image load error:', {
+                          finalUrl: imageUrl,
+                          originalUrl: originalUrl,
+                          articleImageUrl: articleToPreview.image_url,
+                          error: e,
+                          timestamp: new Date().toISOString(),
+                        });
+                        // Спробуємо завантажити через прямий запит для діагностики
+                        fetch(imageUrl)
+                          .then((response) => {
+                            console.error('[KnowledgeBasePage] Fetch response:', {
+                              status: response.status,
+                              statusText: response.statusText,
+                              headers: Object.fromEntries(response.headers.entries()),
+                            });
+                          })
+                          .catch((fetchError) => {
+                            console.error('[KnowledgeBasePage] Fetch error:', fetchError);
+                          });
+                      }}
+                      onLoad={() => {
+                        console.log('[KnowledgeBasePage] Image loaded successfully:', {
+                          url: imageUrl,
+                          original: originalUrl,
+                        });
+                      }}
+                      style={{
+                        maxWidth: '100%',
+                        height: 'auto',
+                        borderRadius: '4px',
+                        border: '1px solid #ddd',
+                      }}
+                    />
+                  </Box>
+                );
+              })()}
+
+              <Box
+                sx={{
+                  '& h1, & h2, & h3, & h4, & h5, & h6': {
+                    marginTop: '1em',
+                    marginBottom: '0.5em',
+                  },
+                  '& p': {
+                    marginBottom: '1em',
+                  },
+                  '& ul, & ol': {
+                    marginLeft: '2em',
+                    marginBottom: '1em',
+                  },
+                  '& code': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                    padding: '2px 4px',
+                    borderRadius: '3px',
+                    fontFamily: 'monospace',
+                  },
+                  '& pre': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                    padding: '1em',
+                    borderRadius: '4px',
+                    overflow: 'auto',
+                  },
+                  '& blockquote': {
+                    borderLeft: '4px solid #ccc',
+                    marginLeft: 0,
+                    paddingLeft: '1em',
+                    color: '#666',
+                  },
+                }}
+              >
+                <ReactMarkdown>{articleToPreview.content}</ReactMarkdown>
+              </Box>
+
+              {articleToPreview.pdf_url && (() => {
+                // Обробка pdf_url для коректного відображення
+                let pdfUrl = articleToPreview.pdf_url.trim();
+                
+                // Якщо це вже повний URL, виправляємо подвоєння /api/v1
+                if (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) {
+                  pdfUrl = pdfUrl.replace(/\/api\/v1\/api\/v1\//g, '/api/v1/');
+                } else if (!pdfUrl.startsWith('blob:')) {
+                  // Якщо це відносний шлях, конвертуємо в повний URL
+                  const baseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api/v1';
+                  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+                  
+                  // Видаляємо /api/v1 з початку, якщо воно є і baseUrl вже містить /api/v1
+                  if (pdfUrl.startsWith('/api/v1/')) {
+                    pdfUrl = pdfUrl.replace(/^\/api\/v1/, '');
+                  }
+                  
+                  // Додаємо baseUrl
+                  if (pdfUrl.startsWith('/')) {
+                    pdfUrl = `${normalizedBaseUrl}${pdfUrl}`;
+                  } else {
+                    pdfUrl = `${normalizedBaseUrl}/${pdfUrl}`;
+                  }
+                  
+                  // Фінальна перевірка на подвоєння
+                  pdfUrl = pdfUrl.replace(/\/api\/v1\/api\/v1\//g, '/api/v1/');
+                }
+                
+                return (
+                  <Box sx={{ mt: 2 }}>
+                    <Button
+                      variant="outlined"
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      startIcon={<OpenInNewIcon />}
+                      component="a"
+                    >
+                      Відкрити PDF
+                    </Button>
+                  </Box>
+                );
+              })()}
+            </Box>
+          )}
+        </MuiDialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewDialogOpen(false)}>Закрити</Button>
+          {articleToPreview && (
+            <Button
+              onClick={() => {
+                setPreviewDialogOpen(false);
+                navigate(`/knowledge-base/articles/${articleToPreview._id}/edit`);
+              }}
+              variant="contained"
+            >
+              Редагувати
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

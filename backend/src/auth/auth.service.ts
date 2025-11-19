@@ -69,17 +69,29 @@ export class AuthService {
   }
 
   async adminLogin(loginDto: LoginDto) {
+    // Allow login by username or email
     const admin = await this.adminUserModel.findOne({
-      username: loginDto.username,
+      $or: [
+        { username: loginDto.username },
+        { email: loginDto.username },
+      ],
       is_active: true,
     }).exec();
 
     if (!admin) {
+      // Log for debugging
+      const allAdmins = await this.adminUserModel.find().exec();
+      console.log(`[Auth] Login attempt failed. Looking for: ${loginDto.username}`);
+      console.log(`[Auth] Found ${allAdmins.length} admin(s) in database:`);
+      allAdmins.forEach((a) => {
+        console.log(`[Auth]   - Username: "${a.username}", Email: "${a.email}", Active: ${a.is_active}`);
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await bcrypt.compare(loginDto.password, admin.password_hash);
     if (!isPasswordValid) {
+      console.log(`[Auth] Password mismatch for admin: ${admin.username}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -117,6 +129,43 @@ export class AuthService {
         .exec();
       return userDoc;
     }
+  }
+
+  async createFirstAdmin(loginDto: LoginDto) {
+    // Check if any admin exists
+    const existingAdmin = await this.adminUserModel.findOne().exec();
+    if (existingAdmin) {
+      throw new UnauthorizedException('Admin user already exists. Use admin/login endpoint.');
+    }
+
+    // Create first admin
+    const passwordHash = await bcrypt.hash(loginDto.password, 10);
+    const adminEmail = loginDto.username.includes('@') ? loginDto.username : `${loginDto.username}@kraina-mriy.com`;
+    const username = loginDto.username.includes('@') ? loginDto.username.split('@')[0] : loginDto.username;
+
+    const admin = new this.adminUserModel({
+      username: username,
+      email: adminEmail,
+      password_hash: passwordHash,
+      role: 'super_admin',
+      is_active: true,
+    });
+
+    await admin.save();
+
+    const payload = { sub: admin._id.toString(), username: admin.username, role: admin.role, type: 'admin' };
+    const token = this.jwtService.sign(payload);
+
+    return {
+      user: {
+        id: admin._id,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+      },
+      token,
+      message: 'First admin user created successfully',
+    };
   }
 
   async refreshToken(user: any) {

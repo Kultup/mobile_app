@@ -3,6 +3,7 @@ import api from './api';
 export interface KnowledgeBaseArticle {
   _id: string;
   category_id: { _id: string; name: string };
+  position_id?: { _id: string; name: string };
   title: string;
   content: string;
   image_url?: string;
@@ -15,6 +16,7 @@ export interface KnowledgeBaseArticle {
 
 export interface CreateKnowledgeArticleDto {
   category_id: string;
+  position_id?: string;
   title: string;
   content: string;
   image_url?: string;
@@ -33,6 +35,16 @@ export interface PaginatedResponse<T> {
 }
 
 export const knowledgeBaseService = {
+  getAll: async (params?: {
+    page?: number;
+    per_page?: number;
+    category_id?: string;
+    search?: string;
+  }): Promise<PaginatedResponse<KnowledgeBaseArticle>> => {
+    const { data } = await api.get('/knowledge-base/articles', { params });
+    return data;
+  },
+
   getArticles: async (params?: {
     page?: number;
     per_page?: number;

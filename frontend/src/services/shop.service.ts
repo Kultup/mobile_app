@@ -19,14 +19,15 @@ export interface ShopProduct {
 export interface CreateShopProductDto {
   name: string;
   description: string;
-  product_type: 'avatar' | 'profile_frame' | 'badge' | 'theme' | 'customization' | 'gift';
+  product_type: string; // Дозволяємо будь-який тип товару
   price: number;
   image_url: string;
   preview_url?: string;
   is_active?: boolean;
   is_premium?: boolean;
-  category: string;
+  category?: string;
   sort_order?: number;
+  custom_product_type?: string; // Для форми, коли вибрано "custom"
 }
 
 export interface PaginatedResponse<T> {

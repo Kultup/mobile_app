@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { User } from '../users/schemas/user.schema';
 import { UserTest } from '../tests/schemas/user-test.schema';
 import { Question } from '../questions/schemas/question.schema';
+import { Position } from '../common/schemas/position.schema';
 import { PushToken } from '../push/schemas/push-token.schema';
 import { PushService } from '../push/push.service';
 
@@ -14,6 +15,7 @@ export class CronService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(UserTest.name) private userTestModel: Model<UserTest>,
     @InjectModel(Question.name) private questionModel: Model<Question>,
+    @InjectModel(Position.name) private positionModel: Model<Position>,
     @InjectModel(PushToken.name) private pushTokenModel: Model<PushToken>,
     private pushService: PushService,
   ) {}
@@ -27,14 +29,6 @@ export class CronService {
     // Отримати всіх активних користувачів
     const users = await this.userModel.find({ is_active: true }).exec();
 
-    // Отримати активні питання
-    const questions = await this.questionModel.find({ is_active: true }).exec();
-
-    if (questions.length < 5) {
-      console.error('Not enough questions available for daily tests');
-      return;
-    }
-
     let generated = 0;
     for (const user of users) {
       // Перевірити чи вже є тест на сьогодні
@@ -44,6 +38,38 @@ export class CronService {
       }).exec();
 
       if (!existingTest) {
+        // Отримати посаду користувача з категоріями
+        let positionCategoryIds: any[] = [];
+        if (user.position_id) {
+          const position = await this.positionModel.findById(user.position_id).exec();
+          if (position && position.category_ids && position.category_ids.length > 0) {
+            positionCategoryIds = position.category_ids.map((id: any) => id.toString ? id.toString() : id);
+          }
+        }
+
+        // Фільтр питань: доступні всім (без position_id) або для посади користувача
+        const questionFilter: any = {
+          is_active: true,
+          $or: [
+            { position_id: { $exists: false } },
+            { position_id: null },
+            ...(user.position_id ? [{ position_id: user.position_id }] : []),
+          ],
+        };
+
+        // Якщо у посади є прив'язані категорії, фільтруємо питання за цими категоріями
+        if (positionCategoryIds.length > 0) {
+          questionFilter.category_id = { $in: positionCategoryIds };
+        }
+
+        // Отримати активні питання для цього користувача (з урахуванням посади та категорій посади)
+        const questions = await this.questionModel.find(questionFilter).exec();
+
+        if (questions.length < 5) {
+          console.warn(`Not enough questions available for user ${user._id} (position: ${user.position_id})`);
+          continue;
+        }
+
         // Випадково вибрати 5 питань
         const shuffled = questions.sort(() => 0.5 - Math.random());
         const selectedQuestions = shuffled.slice(0, 5);

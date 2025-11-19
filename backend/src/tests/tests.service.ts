@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { UserTest } from './schemas/user-test.schema';
 import { Question } from '../questions/schemas/question.schema';
 import { User } from '../users/schemas/user.schema';
+import { Position } from '../common/schemas/position.schema';
 import { PointsTransaction } from '../shop/schemas/points-transaction.schema';
 import { SubmitAnswerDto } from '../common/dto/submit-answer.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -16,6 +17,7 @@ export class TestsService {
     @InjectModel(UserTest.name) private userTestModel: Model<UserTest>,
     @InjectModel(Question.name) private questionModel: Model<Question>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Position.name) private positionModel: Model<Position>,
     @InjectModel(PointsTransaction.name) private pointsTransactionModel: Model<PointsTransaction>,
     @Inject(forwardRef(() => AchievementsCheckerService))
     private achievementsCheckerService: AchievementsCheckerService,
@@ -24,6 +26,12 @@ export class TestsService {
   async getDailyTest(userId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Отримати користувача з position_id
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
 
     // Перевірити чи є тест на сьогодні
     let test = await this.userTestModel.findOne({
@@ -35,10 +43,32 @@ export class TestsService {
       // Створити новий тест з 5 питаннями: по 1-2 з різних категорій
       const selectedQuestions: any[] = [];
       
-      // Отримати всі унікальні категорії з активними питаннями
-      const categories = await this.questionModel.distinct('category_id', {
+      // Отримати посаду користувача з категоріями
+      let positionCategoryIds: any[] = [];
+      if (user.position_id) {
+        const position = await this.positionModel.findById(user.position_id).exec();
+        if (position && position.category_ids && position.category_ids.length > 0) {
+          positionCategoryIds = position.category_ids.map((id: any) => id.toString ? id.toString() : id);
+        }
+      }
+      
+      // Фільтр питань: доступні всім (без position_id) або для посади користувача
+      const questionFilter: any = {
         is_active: true,
-      });
+        $or: [
+          { position_id: { $exists: false } },
+          { position_id: null },
+          ...(user.position_id ? [{ position_id: user.position_id }] : []),
+        ],
+      };
+      
+      // Якщо у посади є прив'язані категорії, фільтруємо питання за цими категоріями
+      if (positionCategoryIds.length > 0) {
+        questionFilter.category_id = { $in: positionCategoryIds };
+      }
+      
+      // Отримати всі унікальні категорії з активними питаннями (з урахуванням посади та категорій посади)
+      const categories = await this.questionModel.distinct('category_id', questionFilter);
 
       if (categories.length === 0) {
         throw new BadRequestException('No questions available');
@@ -55,22 +85,22 @@ export class TestsService {
         const remaining = 5 - selectedQuestions.length;
         const questionsToTake = remaining === 1 ? 1 : Math.floor(Math.random() * 2) + 1;
 
-        // Вибрати випадкові питання з цієї категорії
+        // Вибрати випадкові питання з цієї категорії (з урахуванням посади)
         const categoryQuestions = await this.questionModel.aggregate([
-          { $match: { category_id: categoryId, is_active: true } },
+          { $match: { category_id: categoryId, ...questionFilter } },
           { $sample: { size: questionsToTake } },
         ]);
 
         selectedQuestions.push(...categoryQuestions);
       }
 
-      // Якщо не вистачає питань до 5, додати з будь-яких категорій
+      // Якщо не вистачає питань до 5, додати з будь-яких категорій (з урахуванням посади)
       if (selectedQuestions.length < 5) {
         const selectedIds = selectedQuestions.map((q) => q._id);
         const additionalQuestions = await this.questionModel.aggregate([
           {
             $match: {
-              is_active: true,
+              ...questionFilter,
               _id: { $nin: selectedIds },
             },
           },

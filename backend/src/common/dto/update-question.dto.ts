@@ -18,6 +18,10 @@ export class UpdateQuestionDto {
   @IsOptional()
   category_id?: string;
 
+  @IsMongoId()
+  @IsOptional()
+  position_id?: string;
+
   @IsString()
   @IsOptional()
   question_text?: string;

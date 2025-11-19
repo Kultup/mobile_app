@@ -83,5 +83,41 @@ export class AdminController {
     res.setHeader('Content-Disposition', `attachment; filename=test_history_${new Date().toISOString().split('T')[0]}.xlsx`);
     res.send(buffer);
   }
+
+  @Get('feedback/questions')
+  @Roles('super_admin', 'training_admin', 'viewer')
+  async getFeedbackQuestions(@Query() query: PaginationDto & { is_reviewed?: boolean }) {
+    return this.adminService.getFeedbackQuestions(query);
+  }
+
+  @Get('feedback/error-reports')
+  @Roles('super_admin', 'training_admin', 'viewer')
+  async getFeedbackErrorReports(@Query() query: PaginationDto & { is_reviewed?: boolean }) {
+    return this.adminService.getFeedbackErrorReports(query);
+  }
+
+  @Put('feedback/questions/:id/review')
+  @Roles('super_admin', 'training_admin')
+  async markFeedbackQuestionReviewed(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.adminService.markFeedbackQuestionReviewed(id, user.userId);
+  }
+
+  @Put('feedback/error-reports/:id/review')
+  @Roles('super_admin', 'training_admin')
+  async markErrorReportReviewed(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.adminService.markErrorReportReviewed(id, user.userId);
+  }
+
+  @Get('activity-logs')
+  @Roles('super_admin', 'training_admin', 'viewer')
+  async getActivityLogs(@Query() query: PaginationDto & { admin_user_id?: string; action_type?: string; entity_type?: string; start_date?: string; end_date?: string }) {
+    return this.adminService.getActivityLogs(query);
+  }
+
+  @Get('users/:id/details')
+  @Roles('super_admin', 'training_admin', 'viewer')
+  async getUserDetails(@Param('id') id: string) {
+    return this.adminService.getUserDetails(id);
+  }
 }
 

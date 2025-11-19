@@ -21,18 +21,24 @@ import {
   Switch,
   CircularProgress,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { positionsService, Position, CreatePositionDto } from '../../services/positions.service';
+import { categoriesService } from '../../services/categories.service';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 
 const schema = yup.object({
   name: yup.string().required('Назва посади обов\'язкова'),
+  category_ids: yup.array().of(yup.string()).optional(),
   is_active: yup.boolean().optional(),
 });
 
@@ -48,6 +54,11 @@ const PositionsManager = () => {
     queryFn: () => positionsService.getAll(true), // Include inactive positions for admin view
   });
 
+  const { data: categoriesData } = useQuery({
+    queryKey: ['question-categories'],
+    queryFn: () => categoriesService.getQuestionCategories(true),
+  });
+
   const {
     control,
     handleSubmit,
@@ -57,6 +68,7 @@ const PositionsManager = () => {
     resolver: yupResolver(schema) as any,
     defaultValues: {
       name: '',
+      category_ids: [],
       is_active: true,
     },
   });
@@ -93,14 +105,19 @@ const PositionsManager = () => {
   const handleOpenDialog = (position?: Position) => {
     if (position) {
       setEditingPosition(position);
+      const categoryIds = Array.isArray(position.category_ids)
+        ? position.category_ids.map((cat) => (typeof cat === 'string' ? cat : cat._id))
+        : [];
       reset({
         name: position.name,
+        category_ids: categoryIds,
         is_active: position.is_active,
       });
     } else {
       setEditingPosition(null);
       reset({
         name: '',
+        category_ids: [],
         is_active: true,
       });
     }
@@ -174,24 +191,49 @@ const PositionsManager = () => {
           <TableBody>
             {data?.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} align="center">
+                <TableCell colSpan={4} align="center">
                   <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
                     Посад не знайдено
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              data?.data.map((position) => (
-                <TableRow key={position._id} hover>
-                  <TableCell>{position.name}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={position.is_active ? 'Активна' : 'Неактивна'}
-                      size="small"
-                      color={position.is_active ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
+              data?.data.map((position) => {
+                const categoryIds = Array.isArray(position.category_ids)
+                  ? position.category_ids.map((cat) => (typeof cat === 'string' ? cat : cat._id))
+                  : [];
+                const categories = categoryIds
+                  .map((id) => categoriesData?.data.find((cat) => cat._id === id))
+                  .filter(Boolean);
+                return (
+                  <TableRow key={position._id} hover>
+                    <TableCell>{position.name}</TableCell>
+                    <TableCell>
+                      {categories.length > 0 ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {categories.map((cat) => (
+                            <Chip
+                              key={cat?._id}
+                              label={cat?.name}
+                              size="small"
+                              variant="outlined"
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Немає категорій
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={position.is_active ? 'Активна' : 'Неактивна'}
+                        size="small"
+                        color={position.is_active ? 'success' : 'default'}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
                     <IconButton
                       size="small"
                       onClick={() => handleOpenDialog(position)}
@@ -208,7 +250,8 @@ const PositionsManager = () => {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))
+              );
+            })
             )}
           </TableBody>
         </Table>
@@ -233,6 +276,43 @@ const PositionsManager = () => {
                     helperText={errors.name?.message as string}
                     sx={{ mb: 2 }}
                   />
+                )}
+              />
+              <Controller
+                name="category_ids"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>Категорії питань (опційно)</InputLabel>
+                    <Select
+                      {...field}
+                      multiple
+                      label="Категорії питань (опційно)"
+                      value={field.value || []}
+                      renderValue={(selected) => (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {(selected as string[]).map((value) => {
+                            const category = categoriesData?.data.find((cat) => cat._id === value);
+                            return (
+                              <Chip
+                                key={value}
+                                label={category?.name || value}
+                                size="small"
+                              />
+                            );
+                          })}
+                        </Box>
+                      )}
+                    >
+                      {categoriesData?.data
+                        ?.filter((category) => category.is_active !== false)
+                        .map((category) => (
+                          <MenuItem key={category._id} value={category._id}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
                 )}
               />
               <Controller

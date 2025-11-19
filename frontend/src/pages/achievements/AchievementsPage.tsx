@@ -46,9 +46,17 @@ const categoryLabels: Record<string, string> = {
 
 const conditionLabels: Record<string, string> = {
   tests_count: 'Кількість тестів',
-  streak: 'Серія днів',
-  perfect_tests: 'Ідеальні тести',
-  rating_position: 'Позиція в рейтингу',
+  streak: 'Серія днів (поточна)',
+  longest_streak: 'Найдовша серія днів',
+  perfect_tests: 'Ідеальні тести (5/5)',
+  consecutive_perfect_tests: 'Послідовні ідеальні тести',
+  rating_position: 'Позиція в рейтингу (≤)',
+  total_points: 'Загальна кількість балів',
+  correct_answers_count: 'Кількість правильних відповідей',
+  total_correct_answers: 'Загальна кількість правильних відповідей',
+  average_score: 'Середній бал (≥)',
+  accuracy_percentage: 'Відсоток правильності (≥)',
+  shop_purchases_count: 'Кількість покупок',
 };
 
 const AchievementsPage = () => {

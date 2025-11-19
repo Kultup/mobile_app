@@ -31,6 +31,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, User } from '../../services/admin.service';
 import { citiesService } from '../../services/cities.service';
@@ -38,6 +40,7 @@ import { positionsService } from '../../services/positions.service';
 import UserEditDialog from '../../components/UserEditDialog/UserEditDialog';
 
 const UsersPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -51,12 +54,12 @@ const UsersPage = () => {
 
   const { data: citiesData } = useQuery({
     queryKey: ['cities'],
-    queryFn: citiesService.getAll,
+    queryFn: () => citiesService.getAll(true),
   });
 
   const { data: positionsData } = useQuery({
     queryKey: ['positions'],
-    queryFn: positionsService.getAll,
+    queryFn: () => positionsService.getAll(true),
   });
 
   const { data, isLoading, error } = useQuery({
@@ -265,6 +268,14 @@ const UsersPage = () => {
                     />
                   </TableCell>
                   <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      color="info"
+                      onClick={() => navigate(`/users/${user._id}/details`)}
+                      title="Деталі"
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
                     <IconButton
                       size="small"
                       color="primary"

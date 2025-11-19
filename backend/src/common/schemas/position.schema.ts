@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type PositionDocument = Position & Document;
 
@@ -7,6 +7,9 @@ export type PositionDocument = Position & Document;
 export class Position {
   @Prop({ required: true, unique: true })
   name: string;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'QuestionCategory' }], default: [] })
+  category_ids: Types.ObjectId[];
 
   @Prop({ default: true })
   is_active: boolean;

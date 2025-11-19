@@ -9,9 +9,9 @@ export class CreateShopProductDto {
   @IsOptional()
   description?: string;
 
-  @IsEnum(['avatar', 'profile_frame', 'badge', 'theme', 'customization', 'gift'])
+  @IsString()
   @IsNotEmpty()
-  product_type: string;
+  product_type: string; // Дозволяємо будь-який тип товару
 
   @IsNumber()
   @IsNotEmpty()

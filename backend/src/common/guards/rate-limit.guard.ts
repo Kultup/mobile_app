@@ -9,7 +9,10 @@ export class RateLimitGuard extends ThrottlerGuard {
     return req.ip || req.connection.remoteAddress || 'unknown';
   }
 
-  protected throwThrottlingException(context: ExecutionContext): void {
+  protected async throwThrottlingException(
+    context: ExecutionContext,
+    throttlerLimitDetail: any,
+  ): Promise<void> {
     throw new ThrottlerException('Too many requests, please try again later');
   }
 }

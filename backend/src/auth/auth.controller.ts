@@ -28,6 +28,12 @@ export class AuthController {
     return this.authService.adminLogin(loginDto);
   }
 
+  @Public()
+  @Post('admin/create-first')
+  async createFirstAdmin(@Body() loginDto: LoginDto) {
+    return this.authService.createFirstAdmin(loginDto);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@CurrentUser() user: any) {

@@ -9,19 +9,25 @@ export class AdminActivityLog {
   admin_user_id: Types.ObjectId;
 
   @Prop({ required: true })
-  action: string; // 'create', 'update', 'delete'
+  action: string; // 'create', 'update', 'delete', 'view', 'export', 'login', 'logout'
 
   @Prop({ required: true })
-  entity_type: string; // 'question', 'user', 'article'
+  entity_type: string; // 'question', 'user', 'article', 'achievement', 'shop_product', 'survey', 'settings', 'admin_user'
 
   @Prop({ type: Types.ObjectId })
   entity_id: Types.ObjectId;
+
+  @Prop({ required: true })
+  description: string;
 
   @Prop({ type: Object })
   details: any;
 
   @Prop()
   ip_address: string;
+
+  @Prop()
+  user_agent: string;
 }
 
 export const AdminActivityLogSchema = SchemaFactory.createForClass(AdminActivityLog);

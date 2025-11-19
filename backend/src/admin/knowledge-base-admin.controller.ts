@@ -9,6 +9,7 @@ import { CreateKnowledgeArticleDto } from '../common/dto/create-knowledge-articl
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { Helpers } from '../common/utils/helpers';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { FilesService } from '../files/files.service';
 
 @Controller('admin/knowledge-base/articles')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -16,6 +17,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class KnowledgeBaseAdminController {
   constructor(
     @InjectModel(KnowledgeBaseArticle.name) private articleModel: Model<KnowledgeBaseArticle>,
+    private filesService: FilesService,
   ) {}
 
   @Get()
@@ -36,6 +38,7 @@ export class KnowledgeBaseAdminController {
         .skip(skip)
         .limit(per_page)
         .populate('category_id', 'name')
+        .populate('position_id', 'name')
         .sort({ createdAt: -1 })
         .exec(),
       this.articleModel.countDocuments(filter),
@@ -52,6 +55,7 @@ export class KnowledgeBaseAdminController {
     const article = await this.articleModel
       .findById(id)
       .populate('category_id', 'name')
+      .populate('position_id', 'name')
       .exec();
     if (!article) {
       throw new NotFoundException('Article not found');
@@ -70,6 +74,7 @@ export class KnowledgeBaseAdminController {
     const article = await this.articleModel
       .findByIdAndUpdate(id, updateDto, { new: true })
       .populate('category_id', 'name')
+      .populate('position_id', 'name')
       .exec();
     if (!article) {
       throw new NotFoundException('Article not found');
@@ -79,11 +84,30 @@ export class KnowledgeBaseAdminController {
 
   @Delete(':id')
   async delete(@Param('id') id: string) {
-    const result = await this.articleModel.findByIdAndDelete(id).exec();
-    if (!result) {
+    // Спочатку отримуємо статтю, щоб видалити пов'язані файли
+    const article = await this.articleModel.findById(id).exec();
+    if (!article) {
       throw new NotFoundException('Article not found');
     }
-    return { message: 'Article deleted successfully' };
+
+    // Видаляємо пов'язані файли (зображення та PDF)
+    const deletePromises: Promise<boolean>[] = [];
+    
+    if (article.image_url) {
+      deletePromises.push(this.filesService.deleteFile(article.image_url));
+    }
+    
+    if (article.pdf_url) {
+      deletePromises.push(this.filesService.deleteFile(article.pdf_url));
+    }
+
+    // Виконуємо видалення файлів паралельно
+    await Promise.all(deletePromises);
+
+    // Видаляємо статтю з бази даних
+    await this.articleModel.findByIdAndDelete(id).exec();
+
+    return { message: 'Article and associated files deleted successfully' };
   }
 }
 

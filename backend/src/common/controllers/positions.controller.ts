@@ -19,7 +19,11 @@ export class PositionsController {
     if (includeInactive !== 'true') {
       filter.is_active = true;
     }
-    const positions = await this.positionModel.find(filter).sort({ name: 1 }).exec();
+    const positions = await this.positionModel
+      .find(filter)
+      .populate('category_ids', 'name')
+      .sort({ name: 1 })
+      .exec();
     return { data: positions };
   }
 

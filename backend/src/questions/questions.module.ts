@@ -5,6 +5,7 @@ import { QuestionsService } from './questions.service';
 import { QuestionsImportService } from './questions-import.service';
 import { Question, QuestionSchema } from './schemas/question.schema';
 import { QuestionCategory, QuestionCategorySchema } from './schemas/question-category.schema';
+import { FilesModule } from '../files/files.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { QuestionCategory, QuestionCategorySchema } from './schemas/question-cat
       { name: Question.name, schema: QuestionSchema },
       { name: QuestionCategory.name, schema: QuestionCategorySchema },
     ]),
+    FilesModule,
   ],
   controllers: [QuestionsController],
   providers: [QuestionsService, QuestionsImportService],

@@ -17,13 +17,29 @@ export class CreateAchievementDto {
   @IsNotEmpty()
   category: string;
 
-  @IsEnum(['tests_count', 'streak', 'perfect_tests', 'rating_position'])
+  @IsEnum([
+    'tests_count',
+    'streak',
+    'perfect_tests',
+    'rating_position',
+    'total_points',
+    'correct_answers_count',
+    'average_score',
+    'consecutive_perfect_tests',
+    'longest_streak',
+    'shop_purchases_count',
+    'total_correct_answers',
+    'accuracy_percentage',
+  ])
   @IsNotEmpty()
   condition_type: string;
 
   @IsNumber()
   @IsNotEmpty()
   condition_value: number;
+
+  @IsOptional()
+  condition_extra?: any; // Додаткові параметри (наприклад, { category_id: '...' })
 
   @IsNumber()
   @IsOptional()
