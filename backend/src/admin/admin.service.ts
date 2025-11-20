@@ -12,6 +12,7 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { Helpers } from '../common/utils/helpers';
 import { CreateAdminUserDto } from '../common/dto/create-admin-user.dto';
 import { UpdateAdminUserDto } from '../common/dto/update-admin-user.dto';
+import { ActivityLogService } from '../common/services/activity-log.service';
 
 @Injectable()
 export class AdminService {
@@ -22,6 +23,7 @@ export class AdminService {
     @InjectModel(FeedbackQuestion.name) private feedbackQuestionModel: Model<FeedbackQuestion>,
     @InjectModel(FeedbackErrorReport.name) private feedbackErrorReportModel: Model<FeedbackErrorReport>,
     @InjectModel(AdminActivityLog.name) private adminActivityLogModel: Model<AdminActivityLog>,
+    private activityLogService: ActivityLogService,
   ) {}
 
   async getDashboard() {
@@ -188,19 +190,49 @@ export class AdminService {
     };
   }
 
-  async updateUser(id: string, updateDto: any) {
+  async updateUser(id: string, updateDto: any, adminUserId?: string) {
     const user = await this.userModel.findByIdAndUpdate(id, updateDto, { new: true }).exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    
+    // Логування оновлення користувача
+    if (adminUserId && this.activityLogService) {
+      this.activityLogService.createLogAsync({
+        admin_user_id: adminUserId,
+        action: 'update',
+        entity_type: 'user',
+        entity_id: id,
+        description: `Оновлено користувача: ${user.full_name}`,
+      }).catch((err) => {
+        console.error('[AdminService] Error logging user update:', err);
+      });
+    }
+    
     return user;
   }
 
-  async deleteUser(id: string) {
-    const user = await this.userModel.findByIdAndUpdate(id, { is_active: false }, { new: true }).exec();
+  async deleteUser(id: string, adminUserId?: string) {
+    const user = await this.userModel.findById(id).exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    
+    await this.userModel.findByIdAndUpdate(id, { is_active: false }, { new: true }).exec();
+    
+    // Логування деактивації користувача
+    if (adminUserId && this.activityLogService) {
+      this.activityLogService.createLogAsync({
+        admin_user_id: adminUserId,
+        action: 'delete',
+        entity_type: 'user',
+        entity_id: id,
+        description: `Деактивовано користувача: ${user.full_name}`,
+      }).catch((err) => {
+        console.error('[AdminService] Error logging user deletion:', err);
+      });
+    }
+    
     return { message: 'User deactivated successfully' };
   }
 
@@ -225,7 +257,7 @@ export class AdminService {
     };
   }
 
-  async createAdminUser(createDto: CreateAdminUserDto) {
+  async createAdminUser(createDto: CreateAdminUserDto, adminUserId?: string) {
     // Перевірити чи не існує
     const existing = await this.adminUserModel.findOne({
       $or: [{ username: createDto.username }, { email: createDto.email }],
@@ -244,11 +276,25 @@ export class AdminService {
     });
 
     await adminUser.save();
+    
+    // Логування створення адміністратора
+    if (adminUserId && this.activityLogService) {
+      this.activityLogService.createLogAsync({
+        admin_user_id: adminUserId,
+        action: 'create',
+        entity_type: 'admin_user',
+        entity_id: adminUser._id.toString(),
+        description: `Створено адміністратора: ${adminUser.username}`,
+      }).catch((err) => {
+        console.error('[AdminService] Error logging admin user creation:', err);
+      });
+    }
+    
     const { password_hash, ...result } = adminUser.toObject();
     return result;
   }
 
-  async updateAdminUser(id: string, updateDto: UpdateAdminUserDto) {
+  async updateAdminUser(id: string, updateDto: UpdateAdminUserDto, adminUserId?: string) {
     const updateData: any = { ...updateDto };
     
     if (updateDto.password) {
@@ -261,15 +307,44 @@ export class AdminService {
       throw new NotFoundException('Admin user not found');
     }
 
+    // Логування оновлення адміністратора
+    if (adminUserId && this.activityLogService) {
+      this.activityLogService.createLogAsync({
+        admin_user_id: adminUserId,
+        action: 'update',
+        entity_type: 'admin_user',
+        entity_id: id,
+        description: `Оновлено адміністратора: ${adminUser.username}`,
+      }).catch((err) => {
+        console.error('[AdminService] Error logging admin user update:', err);
+      });
+    }
+
     const { password_hash, ...result } = adminUser.toObject();
     return result;
   }
 
-  async deleteAdminUser(id: string) {
-    const adminUser = await this.adminUserModel.findByIdAndUpdate(id, { is_active: false }, { new: true }).exec();
+  async deleteAdminUser(id: string, adminUserId?: string) {
+    const adminUser = await this.adminUserModel.findById(id).exec();
     if (!adminUser) {
       throw new NotFoundException('Admin user not found');
     }
+    
+    await this.adminUserModel.findByIdAndUpdate(id, { is_active: false }, { new: true }).exec();
+    
+    // Логування деактивації адміністратора
+    if (adminUserId && this.activityLogService) {
+      this.activityLogService.createLogAsync({
+        admin_user_id: adminUserId,
+        action: 'delete',
+        entity_type: 'admin_user',
+        entity_id: id,
+        description: `Деактивовано адміністратора: ${adminUser.username}`,
+      }).catch((err) => {
+        console.error('[AdminService] Error logging admin user deletion:', err);
+      });
+    }
+    
     return { message: 'Admin user deactivated successfully' };
   }
 
@@ -378,9 +453,23 @@ export class AdminService {
         .limit(per_page)
         .populate('admin_user_id', 'username email')
         .sort({ createdAt: -1 })
+        .lean()
         .exec(),
       this.adminActivityLogModel.countDocuments(filter),
     ]);
+
+    // Логування для діагностики
+    console.log('[AdminService] getActivityLogs:', {
+      filter,
+      total,
+      dataLength: data.length,
+      firstLog: data[0] ? {
+        _id: data[0]._id,
+        admin_user_id: data[0].admin_user_id,
+        action: data[0].action,
+        entity_type: data[0].entity_type,
+      } : null,
+    });
 
     return {
       data,

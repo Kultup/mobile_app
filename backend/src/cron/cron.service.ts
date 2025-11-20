@@ -7,6 +7,7 @@ import { UserTest } from '../tests/schemas/user-test.schema';
 import { Question } from '../questions/schemas/question.schema';
 import { Position } from '../common/schemas/position.schema';
 import { PushToken } from '../push/schemas/push-token.schema';
+import { AdminActivityLog } from '../common/schemas/admin-activity-log.schema';
 import { PushService } from '../push/push.service';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class CronService {
     @InjectModel(Question.name) private questionModel: Model<Question>,
     @InjectModel(Position.name) private positionModel: Model<Position>,
     @InjectModel(PushToken.name) private pushTokenModel: Model<PushToken>,
+    @InjectModel(AdminActivityLog.name) private adminActivityLogModel: Model<AdminActivityLog>,
     private pushService: PushService,
   ) {}
 
@@ -206,6 +208,57 @@ export class CronService {
     }
 
     console.log(`Sent ${sent} 1-hour reminders`);
+  }
+
+  // Оновлення рейтингів (щогодини) - перевірка та логування статистики
+  @Cron('0 * * * *') // Кожну годину
+  async updateRatings() {
+    try {
+      // Підрахунок загальної статистики рейтингів
+      const totalUsers = await this.userModel.countDocuments({ is_active: true }).exec();
+      const usersWithScore = await this.userModel.countDocuments({
+        is_active: true,
+        total_score: { $gt: 0 },
+      }).exec();
+
+      // Топ-10 користувачів
+      const topUsers = await this.userModel
+        .find({ is_active: true })
+        .sort({ total_score: -1 })
+        .limit(10)
+        .select('full_name total_score tests_completed current_streak')
+        .exec();
+
+      console.log(`[CronService] Ratings update check:`, {
+        totalUsers,
+        usersWithScore,
+        topUsersCount: topUsers.length,
+        topScore: topUsers[0]?.total_score || 0,
+      });
+
+      // Можна додати кешування або інші операції тут
+    } catch (error) {
+      console.error('[CronService] Error updating ratings:', error);
+    }
+  }
+
+  // Очищення старих логів (щодня о 02:00)
+  @Cron('0 2 * * *') // О 02:00 щодня
+  async cleanOldLogs() {
+    try {
+      // Видаляємо логи старше 90 днів
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 90);
+      cutoffDate.setHours(0, 0, 0, 0);
+
+      const result = await this.adminActivityLogModel.deleteMany({
+        createdAt: { $lt: cutoffDate },
+      }).exec();
+
+      console.log(`[CronService] Cleaned ${result.deletedCount} old activity logs (older than 90 days)`);
+    } catch (error) {
+      console.error('[CronService] Error cleaning old logs:', error);
+    }
   }
 }
 

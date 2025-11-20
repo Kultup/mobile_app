@@ -32,6 +32,7 @@ import { ShopCategoriesAdminController } from './shop-categories-admin.controlle
 import { ProductTypesAdminController } from './product-types-admin.controller';
 import { FilesModule } from '../files/files.module';
 import { ShopModule } from '../shop/shop.module';
+import { ActivityLogService } from '../common/services/activity-log.service';
 
 @Module({
   imports: [
@@ -69,8 +70,8 @@ import { ShopModule } from '../shop/shop.module';
     ShopCategoriesAdminController,
     ProductTypesAdminController,
   ],
-  providers: [AdminService, AdminExportService, SettingsService],
-  exports: [AdminService, SettingsService, AdminExportService],
+  providers: [AdminService, AdminExportService, SettingsService, ActivityLogService],
+  exports: [AdminService, SettingsService, AdminExportService, ActivityLogService],
 })
 export class AdminModule {}
 

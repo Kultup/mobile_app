@@ -74,5 +74,54 @@ export const adminService = {
     const { data } = await api.get(`/admin/users/${id}/details`);
     return data;
   },
+
+  // Admin Users
+  getAdminUsers: async (params?: {
+    page?: number;
+    per_page?: number;
+  }): Promise<PaginatedResponse<AdminUser>> => {
+    const { data } = await api.get('/admin/admin-users', { params });
+    return data;
+  },
+
+  createAdminUser: async (createData: CreateAdminUserDto): Promise<AdminUser> => {
+    const { data } = await api.post('/admin/admin-users', createData);
+    return data;
+  },
+
+  updateAdminUser: async (id: string, updateData: UpdateAdminUserDto): Promise<AdminUser> => {
+    const { data } = await api.put(`/admin/admin-users/${id}`, updateData);
+    return data;
+  },
+
+  deleteAdminUser: async (id: string): Promise<void> => {
+    await api.delete(`/admin/admin-users/${id}`);
+  },
 };
+
+export interface AdminUser {
+  _id: string;
+  username: string;
+  email: string;
+  role: 'super_admin' | 'training_admin' | 'viewer';
+  is_active: boolean;
+  last_login_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateAdminUserDto {
+  username: string;
+  email: string;
+  password: string;
+  role?: 'super_admin' | 'training_admin' | 'viewer';
+}
+
+export interface UpdateAdminUserDto {
+  username?: string;
+  email?: string;
+  password?: string;
+  role?: 'super_admin' | 'training_admin' | 'viewer';
+  is_active?: boolean;
+}
 

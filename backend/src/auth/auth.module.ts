@@ -10,6 +10,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { AdminUser, AdminUserSchema } from '../admin/schemas/admin-user.schema';
+import { AdminActivityLog, AdminActivityLogSchema } from '../common/schemas/admin-activity-log.schema';
+import { ActivityLogService } from '../common/services/activity-log.service';
 
 @Module({
   imports: [
@@ -27,10 +29,11 @@ import { AdminUser, AdminUserSchema } from '../admin/schemas/admin-user.schema';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: AdminUser.name, schema: AdminUserSchema },
+      { name: AdminActivityLog.name, schema: AdminActivityLogSchema },
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
+  providers: [AuthService, JwtStrategy, LocalStrategy, ActivityLogService],
   exports: [AuthService],
 })
 export class AuthModule {}

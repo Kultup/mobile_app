@@ -24,6 +24,8 @@ import QuestionCategoriesPage from './pages/question-categories/QuestionCategori
 import KnowledgeBaseCategoriesPage from './pages/knowledge-base-categories/KnowledgeBaseCategoriesPage';
 import FeedbackPage from './pages/feedback/FeedbackPage';
 import LogsPage from './pages/logs/LogsPage';
+import AdminUsersPage from './pages/admin-users/AdminUsersPage';
+import WikiPage from './pages/wiki/WikiPage';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -73,6 +75,8 @@ function App() {
         <Route path="knowledge-base/categories" element={<KnowledgeBaseCategoriesPage />} />
         <Route path="feedback" element={<FeedbackPage />} />
         <Route path="logs" element={<LogsPage />} />
+        <Route path="admin-users" element={<AdminUsersPage />} />
+        <Route path="wiki" element={<WikiPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

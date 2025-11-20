@@ -6,6 +6,7 @@ import { UserTest, UserTestSchema } from '../tests/schemas/user-test.schema';
 import { Question, QuestionSchema } from '../questions/schemas/question.schema';
 import { Position, PositionSchema } from '../common/schemas/position.schema';
 import { PushToken, PushTokenSchema } from '../push/schemas/push-token.schema';
+import { AdminActivityLog, AdminActivityLogSchema } from '../common/schemas/admin-activity-log.schema';
 import { PushModule } from '../push/push.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { PushModule } from '../push/push.module';
       { name: Question.name, schema: QuestionSchema },
       { name: Position.name, schema: PositionSchema },
       { name: PushToken.name, schema: PushTokenSchema },
+      { name: AdminActivityLog.name, schema: AdminActivityLogSchema },
     ]),
     PushModule,
   ],

@@ -1,14 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, NotFoundException, Req } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Request } from 'express';
 import { ShopProduct } from '../shop/schemas/shop-product.schema';
 import { UserPurchase } from '../shop/schemas/user-purchase.schema';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateShopProductDto } from '../common/dto/create-shop-product.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { Helpers } from '../common/utils/helpers';
+import { ActivityLogService } from '../common/services/activity-log.service';
 
 @Controller('admin/shop/products')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -17,6 +20,7 @@ export class ShopAdminController {
   constructor(
     @InjectModel(ShopProduct.name) private shopProductModel: Model<ShopProduct>,
     @InjectModel(UserPurchase.name) private userPurchaseModel: Model<UserPurchase>,
+    private activityLogService: ActivityLogService,
   ) {}
 
   @Get()
@@ -55,27 +59,73 @@ export class ShopAdminController {
   }
 
   @Post()
-  async create(@Body() createDto: CreateShopProductDto) {
-    return this.shopProductModel.create(createDto);
+  async create(@Body() createDto: CreateShopProductDto, @CurrentUser() user: any, @Req() req: Request) {
+    const product = await this.shopProductModel.create(createDto);
+    
+    // Логування створення товару
+    this.activityLogService.createLogAsync({
+      admin_user_id: user.userId,
+      action: 'create',
+      entity_type: 'shop_product',
+      entity_id: product._id.toString(),
+      description: `Створено товар: ${product.name}`,
+      ip_address: req.ip || (req.headers['x-forwarded-for'] as string) || '',
+      user_agent: req.headers['user-agent'] || '',
+    }).catch((err) => {
+      console.error('[ShopAdminController] Error logging product creation:', err);
+    });
+    
+    return product;
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() updateDto: Partial<CreateShopProductDto>) {
+  async update(@Param('id') id: string, @Body() updateDto: Partial<CreateShopProductDto>, @CurrentUser() user: any, @Req() req: Request) {
     const product = await this.shopProductModel
       .findByIdAndUpdate(id, updateDto, { new: true })
       .exec();
     if (!product) {
       throw new NotFoundException('Product not found');
     }
+    
+    // Логування оновлення товару
+    this.activityLogService.createLogAsync({
+      admin_user_id: user.userId,
+      action: 'update',
+      entity_type: 'shop_product',
+      entity_id: id,
+      description: `Оновлено товар: ${product.name}`,
+      ip_address: req.ip || (req.headers['x-forwarded-for'] as string) || '',
+      user_agent: req.headers['user-agent'] || '',
+    }).catch((err) => {
+      console.error('[ShopAdminController] Error logging product update:', err);
+    });
+    
     return product;
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) {
-    const result = await this.shopProductModel.findByIdAndDelete(id).exec();
-    if (!result) {
+  async delete(@Param('id') id: string, @CurrentUser() user: any, @Req() req: Request) {
+    const product = await this.shopProductModel.findById(id).exec();
+    if (!product) {
       throw new NotFoundException('Product not found');
     }
+    
+    const productName = product.name;
+    await this.shopProductModel.findByIdAndDelete(id).exec();
+    
+    // Логування видалення товару
+    this.activityLogService.createLogAsync({
+      admin_user_id: user.userId,
+      action: 'delete',
+      entity_type: 'shop_product',
+      entity_id: id,
+      description: `Видалено товар: ${productName}`,
+      ip_address: req.ip || (req.headers['x-forwarded-for'] as string) || '',
+      user_agent: req.headers['user-agent'] || '',
+    }).catch((err) => {
+      console.error('[ShopAdminController] Error logging product deletion:', err);
+    });
+    
     return { message: 'Product deleted successfully' };
   }
 

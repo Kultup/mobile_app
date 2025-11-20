@@ -24,9 +24,12 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import CategoryIcon from '@mui/icons-material/Category';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import HistoryIcon from '@mui/icons-material/History';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import HelpIcon from '@mui/icons-material/Help';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useState } from 'react';
+import { useRole } from '../../hooks/useRole';
 
 const drawerWidth = 260;
 
@@ -36,6 +39,7 @@ interface MenuItem {
   path: string;
   exact?: boolean; // Якщо true, то точне співпадіння шляху
   children?: MenuItem[];
+  requiresSuperAdmin?: boolean; // Якщо true, то тільки для super_admin
 }
 
 const menuItems: MenuItem[] = [
@@ -74,12 +78,15 @@ const menuItems: MenuItem[] = [
   },
   { text: 'Зворотний зв\'язок', icon: <FeedbackIcon />, path: '/feedback', exact: true },
   { text: 'Логи', icon: <HistoryIcon />, path: '/logs', exact: true },
+  { text: 'Адміністратори', icon: <AdminPanelSettingsIcon />, path: '/admin-users', exact: true, requiresSuperAdmin: true },
+  { text: 'Wiki', icon: <HelpIcon />, path: '/wiki', exact: true },
   { text: 'Налаштування', icon: <SettingsIcon />, path: '/settings', exact: true },
 ];
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isSuperAdmin } = useRole();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Визначаємо, чи активний пункт меню
@@ -115,6 +122,11 @@ const Sidebar = () => {
   };
 
   const renderMenuItem = (item: MenuItem, level: number = 0) => {
+    // Перевірка прав доступу
+    if (item.requiresSuperAdmin && !isSuperAdmin()) {
+      return null;
+    }
+
     const active = isActive(item);
     const hasChildren = item.children && item.children.length > 0;
     const expanded = shouldBeExpanded(item);
@@ -189,13 +201,15 @@ const Sidebar = () => {
     );
   };
 
-  // Групуємо пункти меню
-  const mainItems = menuItems.filter((item) => 
-    !['Зворотний зв\'язок', 'Логи', 'Налаштування'].includes(item.text)
-  );
-  const systemItems = menuItems.filter((item) =>
-    ['Зворотний зв\'язок', 'Логи', 'Налаштування'].includes(item.text)
-  );
+  // Групуємо пункти меню з урахуванням прав доступу
+  const mainItems = menuItems.filter((item) => {
+    if (item.requiresSuperAdmin && !isSuperAdmin()) return false;
+    return !['Зворотний зв\'язок', 'Логи', 'Адміністратори', 'Налаштування'].includes(item.text);
+  });
+  const systemItems = menuItems.filter((item) => {
+    if (item.requiresSuperAdmin && !isSuperAdmin()) return false;
+    return ['Зворотний зв\'язок', 'Логи', 'Адміністратори', 'Налаштування'].includes(item.text);
+  });
 
   return (
     <Drawer

@@ -87,11 +87,11 @@ const QuestionPreview = ({ question }: QuestionPreviewProps) => {
   }, [question.video_url, question.media_type]);
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 600, mx: 'auto', mt: 2 }}>
-      <Typography variant="h6" gutterBottom>
+    <Paper sx={{ p: 3, maxWidth: 600, mx: 'auto', mt: 2, boxShadow: 3 }}>
+      <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
         Preview питання
       </Typography>
-      <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 2, p: 2, bgcolor: '#fafafa' }}>
+      <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 2, p: 3, bgcolor: '#fafafa', minHeight: 200 }}>
         {/* Медіа */}
         {question.media_type === 'image' && imageUrl && (
           <Box sx={{ mb: 2, textAlign: 'center' }}>

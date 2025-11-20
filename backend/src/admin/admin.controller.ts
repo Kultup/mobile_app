@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Res 
 import { Response } from 'express';
 import { AdminService } from './admin.service';
 import { AdminExportService } from './admin-export.service';
+import { ActivityLogService } from '../common/services/activity-log.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -17,6 +18,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly adminExportService: AdminExportService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   @Get('dashboard')
@@ -32,14 +34,14 @@ export class AdminController {
 
   @Put('users/:id')
   @Roles('super_admin', 'training_admin')
-  async updateUser(@Param('id') id: string, @Body() updateDto: any) {
-    return this.adminService.updateUser(id, updateDto);
+  async updateUser(@Param('id') id: string, @Body() updateDto: any, @CurrentUser() user: any) {
+    return this.adminService.updateUser(id, updateDto, user.userId);
   }
 
   @Delete('users/:id')
   @Roles('super_admin')
-  async deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
+  async deleteUser(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.adminService.deleteUser(id, user.userId);
   }
 
   @Get('admin-users')
@@ -50,20 +52,20 @@ export class AdminController {
 
   @Post('admin-users')
   @Roles('super_admin')
-  async createAdminUser(@Body() createDto: CreateAdminUserDto) {
-    return this.adminService.createAdminUser(createDto);
+  async createAdminUser(@Body() createDto: CreateAdminUserDto, @CurrentUser() user: any) {
+    return this.adminService.createAdminUser(createDto, user.userId);
   }
 
   @Put('admin-users/:id')
   @Roles('super_admin')
-  async updateAdminUser(@Param('id') id: string, @Body() updateDto: UpdateAdminUserDto) {
-    return this.adminService.updateAdminUser(id, updateDto);
+  async updateAdminUser(@Param('id') id: string, @Body() updateDto: UpdateAdminUserDto, @CurrentUser() user: any) {
+    return this.adminService.updateAdminUser(id, updateDto, user.userId);
   }
 
   @Delete('admin-users/:id')
   @Roles('super_admin')
-  async deleteAdminUser(@Param('id') id: string) {
-    return this.adminService.deleteAdminUser(id);
+  async deleteAdminUser(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.adminService.deleteAdminUser(id, user.userId);
   }
 
   @Get('statistics/export')
@@ -111,7 +113,13 @@ export class AdminController {
   @Get('activity-logs')
   @Roles('super_admin', 'training_admin', 'viewer')
   async getActivityLogs(@Query() query: PaginationDto & { admin_user_id?: string; action_type?: string; entity_type?: string; start_date?: string; end_date?: string }) {
-    return this.adminService.getActivityLogs(query);
+    console.log('[AdminController] getActivityLogs request:', query);
+    const result = await this.adminService.getActivityLogs(query);
+    console.log('[AdminController] getActivityLogs response:', {
+      total: result.meta.total,
+      dataLength: result.data.length,
+    });
+    return result;
   }
 
   @Get('users/:id/details')

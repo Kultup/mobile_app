@@ -8,6 +8,8 @@ import { User } from '../users/schemas/user.schema';
 import { AdminUser } from '../admin/schemas/admin-user.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ActivityLogService } from '../common/services/activity-log.service';
+import { forwardRef, Inject } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +17,8 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(AdminUser.name) private adminUserModel: Model<AdminUser>,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => ActivityLogService))
+    private activityLogService?: ActivityLogService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -99,6 +103,18 @@ export class AuthService {
     admin.last_login_at = new Date();
     await admin.save();
 
+    // Логування входу адміністратора
+    if (this.activityLogService) {
+      this.activityLogService.createLogAsync({
+        admin_user_id: admin._id.toString(),
+        action: 'login',
+        entity_type: 'admin_user',
+        description: `Вхід адміністратора: ${admin.username}`,
+      }).catch((err) => {
+        console.error('[AuthService] Error logging admin login:', err);
+      });
+    }
+
     const payload = { sub: admin._id.toString(), username: admin.username, role: admin.role, type: 'admin' };
     const token = this.jwtService.sign(payload);
 
@@ -175,7 +191,17 @@ export class AuthService {
   }
 
   async logout(user: any) {
-    // TODO: Implement logout logic
+    // Логування виходу адміністратора
+    if (user.type === 'admin' && this.activityLogService) {
+      this.activityLogService.createLogAsync({
+        admin_user_id: user.userId,
+        action: 'logout',
+        entity_type: 'admin_user',
+        description: `Вихід адміністратора: ${user.username}`,
+      }).catch((err) => {
+        console.error('[AuthService] Error logging admin logout:', err);
+      });
+    }
     return { message: 'Logged out successfully' };
   }
 

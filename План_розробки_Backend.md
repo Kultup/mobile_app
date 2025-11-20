@@ -278,7 +278,7 @@ backend/
 **Завдання:**
 - [x] Логування всіх запитів - Winston logger інтегровано
 - [ ] Логування помилок (Sentry)
-- [x] Логування дій адміністраторів - AdminActivityLog schema та endpoints
+- [x] Логування дій адміністраторів - AdminActivityLog schema, endpoints та ActivityLogService (автоматичне логування входу/виходу, CRUD операцій)
 - [ ] Метрики продуктивності
 
 ### 15. Безпека

@@ -116,7 +116,7 @@ frontend/
 - [x] QuestionsList - таблиця питань (QuestionsPage)
 - [x] QuestionForm - форма створення/редагування (QuestionFormPage)
 - [x] QuestionFilters - фільтри (в QuestionsPage)
-- [ ] CategoriesTree - дерево категорій (потрібно додати)
+- [x] CategoriesTree - дерево категорій (CategoryTree компонент з drag & drop)
 - [x] ImportQuestions - імпорт з Excel (QuestionsPage з діалогом)
 
 **Функціонал:**
@@ -141,7 +141,7 @@ frontend/
 - [x] Видалення/деактивація питання
 - [x] Масовий імпорт з Excel (UI реалізовано в QuestionsPage)
 - [x] Управління категоріями (окрема сторінка QuestionCategoriesPage)
-- [ ] Дерево категорій з drag & drop (опційно)
+- [x] Дерево категорій з drag & drop (CategoryTree компонент)
 - [ ] Preview питання (як воно виглядатиме в мобільному додатку з медіа)
 
 ### 4. База знань
@@ -159,7 +159,7 @@ frontend/
 - [x] ArticleForm - форма статті (KnowledgeBaseArticleFormPage)
 - [x] MarkdownEditor - редактор Markdown (MarkdownEditor компонент)
 - [x] FileUploader - завантаження зображень/PDF (FileUpload компонент)
-- [ ] CategoriesTree - дерево категорій (потрібно додати)
+- [x] CategoriesTree - дерево категорій (CategoryTree компонент з drag & drop)
 
 **Функціонал:**
 - [x] CRUD для статей (повна реалізація):
@@ -206,14 +206,14 @@ frontend/
 - [x] RatingsTable - таблиця рейтингів (StatisticsPage з табами)
 - [x] TestsChart - графік тестів (StatisticsPage)
 - [x] CompletionRateChart - графік проходження (StatisticsPage)
-- [ ] HeatMap - теплова карта активності (потрібно додати)
+- [x] HeatMap - теплова карта активності (ActivityHeatmap компонент)
 - [x] ExportButton - експорт даних (кнопка на StatisticsPage)
 
 **Функціонал:**
 - [x] Рейтинги (загальний, за містом, за посадою) (таблиця на StatisticsPage)
 - [x] Статистика проходження тестів (базові графіки є)
 - [x] Графіки активності (базові графіки є)
-- [ ] Теплова карта по містах/посадах (потрібно додати)
+- [x] Теплова карта по містах/посадах (ActivityHeatmap компонент на дашборді)
 - [x] Експорт статистики (Excel) (кнопка на StatisticsPage)
 - [x] Фільтри за містом та посадою для рейтингів (реалізовано)
 - [x] Фільтри за періодом (DatePicker на StatisticsPage)
@@ -392,7 +392,7 @@ frontend/
 - [x] Форма створення/редагування
 - [x] Завантаження фото до питань
 - [x] Завантаження відео до питань
-- [ ] Генерація прев'ю для відео (backend TODO)
+- [x] Генерація прев'ю для відео (backend: fluent-ffmpeg реалізовано)
 - [x] Preview медіа в формі
 - [x] Управління категоріями (окрема сторінка QuestionCategoriesPage)
 - [x] Імпорт з Excel (UI реалізовано)
